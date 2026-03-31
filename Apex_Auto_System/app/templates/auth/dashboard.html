@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - Apex Auto System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        background-color: #f0f4f8;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .header-section {
+        background-color: white;
+        padding: 10px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .logo {
+        width: 140px;
+        height: auto;
+        cursor: pointer;
+      }
+      .nav-links {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+      .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        text-decoration: none;
+        color: #555;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      .nav-link-custom:hover,
+      .nav-link-custom.active {
+        color: #fff;
+        background-color: #3182ce;
+      }
+      .nav-link-custom i {
+        margin-right: 8px;
+        font-size: 16px;
+      }
+      .user-profile-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-avatar-header {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #3182ce;
+      }
+      .user-name-header {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+      }
+      .main-panel-card {
+        background-color: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        margin-bottom: 50px;
+      }
+      .panel-title {
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #2b6cb0;
+        margin-bottom: 25px;
+        position: relative;
+      }
+      .panel-title::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background-color: #2b6cb0;
+      }
+      .search-container {
+        position: relative;
+        margin-bottom: 20px;
+      }
+      .search-input-pill {
+        border-radius: 10px;
+        padding: 12px 20px;
+        padding-right: 45px;
+        border: 1px solid #e2e8f0;
+        width: 100%;
+      }
+      .search-icon-pill {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0aec0;
+        font-size: 18px;
+      }
+      .btn-add-user-custom {
+        background-color: #3182ce;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        margin-bottom: 25px;
+      }
+      .table-custom-clear {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .table-custom-clear thead th {
+        color: #718096;
+        font-size: 13px;
+        padding: 15px;
+        border-bottom: 1px solid #edf2f7;
+      }
+      .table-custom-clear tbody td {
+        color: #4a5568;
+        font-size: 14px;
+        padding: 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #edf2f7;
+      }
+      .user-avatar-table {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #ddd;
+      }
+      .badge-admin {
+        background-color: #f6e05e;
+        color: #8c7b00;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .badge-user {
+        background-color: #edf2f7;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .btn-action-view {
+        background-color: #63b3ed;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px;
+        margin-right: 5px;
+      }
+      .btn-action-edit {
+        background-color: #f6ad55;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px;
+        margin-right: 5px;
+      }
+      .btn-action-delete {
+        background-color: #e53e3e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px;
+      }
+      .modal-details-header {
+        background-color: #5dade2;
+        color: white;
+        border-radius: 12px 12px 0 0;
+        border: none;
+      }
+      .modal-details-content {
+        border-radius: 12px;
+        border: none;
+      }
+      .detail-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        color: #2c5f7d;
+      }
+      .detail-item i {
+        margin-right: 12px;
+        font-size: 18px;
+        color: #5dade2;
+      }
+      .detail-label {
+        font-weight: 700;
+        margin-right: 5px;
+      }
+      .detail-img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #e8f4f8;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      .btn-close-modal {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header-section">
+      <img
+        src="{{ url_for('static', filename='img/FontTrack.png') }}"
+        alt="Logo"
+        class="logo"
+        onclick="window.location.href='{{ url_for('main.index') }}'"
+      />
+      <nav class="nav-links">
+        <a
+          href="{{ url_for('main.dashboard') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.dashboard' else '' }}"
+        >
+          <i class="bi bi-person-badge"></i>Usuarios
+        </a>
+
+        <a
+          href="{{ url_for('main.lugares') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.lugares' else '' }}"
+        >
+          <i class="bi bi-geo-alt"></i>Lugares
+        </a>
+
+        <a
+          href="{{ url_for('main.materiales') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.materiales' else '' }}"
+        >
+          <i class="bi bi-box-seam"></i>Materiales
+        </a>
+
+        <a href="#" class="nav-link-custom">
+          <i class="bi bi-car-front"></i>Vehículos
+        </a>
+      </nav>
+      <div class="user-profile-header">
+        <img
+          src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}"
+          class="user-avatar-header"
+          onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';"
+        />
+        <span class="user-name-header">{{ current_user.nombre }}</span>
+        <a
+          href="{{ url_for('main.logout') }}"
+          class="btn btn-sm btn-outline-danger ms-2"
+          >Salir</a
+        >
+      </div>
+    </header>
+
+    <div class="container-xl">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} alert-dismissible fade show shadow-sm"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <div class="main-panel-card">
+        <h2 class="panel-title">Gestión de Usuarios</h2>
+
+        <div class="search-container">
+          <input
+            type="text"
+            id="searchUsers"
+            class="search-input-pill"
+            placeholder="Buscar por nombre, correo o tipo..."
+          />
+          <i class="bi bi-search search-icon-pill"></i>
+        </div>
+
+        <button
+          class="btn btn-add-user-custom"
+          data-bs-toggle="modal"
+          data-bs-target="#modalRegistro"
+        >
+          <i class="bi bi-person-plus me-2"></i> Registrar Usuario
+        </button>
+
+        <div class="table-responsive">
+          <table class="table table-custom-clear" id="tablaUsuarios">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Tipo</th>
+                <th>Foto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+              {% for usuario in usuarios %}
+              <tr>
+                <td>{{ usuario.nombre }}</td>
+                <td>{{ usuario.correo }}</td>
+                <td>
+                  <span
+                    class="{{ 'badge badge-admin' if usuario.tipo_usuario == 1 else 'badge badge-user' }}"
+                  >
+                    {{ 'Admin' if usuario.tipo_usuario == 1 else 'Usuario' }}
+                  </span>
+                </td>
+                <td>
+                  <img
+                    src="{{ url_for('static', filename='img/usuarios/' + (usuario.foto_usuario_url if usuario.foto_usuario_url else 'default.png')) }}"
+                    class="user-avatar-table"
+                    onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ usuario.nombre }}&background=random';"
+                  />
+                </td>
+                <td>
+                  <button
+                    class="btn-action-view btn-sm btnVer"
+                    data-id="{{ usuario._id }}"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn-action-edit btn-sm btnEditar"
+                    data-id="{{ usuario._id }}"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn-action-delete btn-sm btnEliminar"
+                    data-id="{{ usuario._id }}"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalles" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-details-content">
+          <div class="modal-header modal-details-header">
+            <h5 class="modal-title">Detalles del Usuario</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="row align-items-center">
+              <div class="col-7">
+                <div class="detail-item">
+                  <i class="bi bi-person"></i>
+                  <div>
+                    <span class="detail-label">Nombre:</span>
+                    <span id="detNombre"></span>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <i class="bi bi-envelope"></i>
+                  <div>
+                    <span class="detail-label">Correo:</span>
+                    <span id="detCorreo"></span>
+                  </div>
+                </div>
+                <div class="detail-item">
+                  <i class="bi bi-shield-check"></i>
+                  <div>
+                    <span class="detail-label">Tipo:</span>
+                    <span id="detTipo"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-5 text-center">
+                <img id="detFoto" src="" class="detail-img" alt="Usuario" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button
+              type="button"
+              class="btn-close-modal"
+              data-bs-dismiss="modal"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+          <form id="formEditar" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-header">
+              <h5 class="modal-title">Editar Usuario</h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body text-dark">
+              <div class="mb-3 text-center">
+                <img
+                  id="editFotoPreview"
+                  src=""
+                  class="user-avatar-table mb-2"
+                  style="width: 80px; height: 80px; border-radius: 50%"
+                />
+                <p class="text-white small">Imagen actual</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-white">Nombre</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  id="editNombre"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-white">Correo</label>
+                <input
+                  type="email"
+                  name="correo"
+                  id="editCorreo"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-white"
+                  >Nueva Foto (Opcional)</label
+                >
+                <input
+                  type="file"
+                  name="foto_usuario"
+                  class="form-control"
+                  accept="image/*"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-white"
+                  >Nueva Contraseña (Opcional)</label
+                >
+                <input type="password" name="password" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-white">Tipo</label>
+                <select name="tipo_usuario" id="editTipo" class="form-select">
+                  <option value="2">Usuario Normal</option>
+                  <option value="1">Administrador</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-warning">Actualizar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      $(document).ready(function () {
+        const csrfToken = $('meta[name="csrf-token"]').attr("content");
+
+        // Función para obtener la URL de la imagen de forma segura
+        function getImageUrl(fotoName, userName) {
+          if (fotoName && fotoName !== "" && fotoName !== "None") {
+            return "/static/img/usuarios/" + fotoName;
+          }
+          return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
+        }
+
+        // VER DETALLES
+        $(document).on("click", ".btnVer", function () {
+          const id = $(this).data("id");
+          $.get("/user/" + id, function (data) {
+            $("#detNombre").text(data.nombre);
+            $("#detCorreo").text(data.correo);
+            $("#detTipo").text(data.tipo_usuario == 1 ? "Admin" : "Usuario");
+
+            // IMPORTANTE: Ajustado a data.foto_usuario_url (o el nombre que envíe tu backend)
+            let foto = data.foto_usuario_url || data.foto || "";
+            $("#detFoto").attr("src", getImageUrl(foto, data.nombre));
+
+            $("#modalDetalles").modal("show");
+          });
+        });
+
+        // BUSCADOR
+        $("#searchUsers").on("keyup", function () {
+          var value = $(this).val().toLowerCase();
+          $("#userTableBody tr").filter(function () {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+          });
+        });
+
+        // EDITAR USUARIO
+        $(document).on("click", ".btnEditar", function () {
+          const id = $(this).data("id");
+          $.get("/user/" + id, function (data) {
+            $("#editNombre").val(data.nombre);
+            $("#editCorreo").val(data.correo);
+            $("#editTipo").val(data.tipo_usuario);
+
+            let foto = data.foto_usuario_url || data.foto || "";
+            $("#editFotoPreview").attr("src", getImageUrl(foto, data.nombre));
+
+            $("#formEditar").attr("action", "/user/update/" + id);
+            $("#modalEditar").modal("show");
+          }).fail(function () {
+            alert("Error al obtener datos");
+          });
+        });
+
+        // ELIMINAR USUARIO
+        $(document).on("click", ".btnEliminar", function () {
+          const id = $(this).data("id");
+          const fila = $(this).closest("tr");
+          if (confirm("¿Estás seguro de eliminar este usuario?")) {
+            $.ajax({
+              url: "/user/delete/" + id,
+              type: "DELETE",
+              headers: { "X-CSRFToken": csrfToken },
+              success: function () {
+                fila.fadeOut();
+              },
+              error: function (xhr) {
+                alert(xhr.responseJSON.error || "Error");
+              },
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

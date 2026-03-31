@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apex - Bienvenido</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png" />
+    
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" />
+
+    <style>
+        /* =====================================
+           RESET & BASE
+        ===================================== */
+        *, *::before, *::after { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        html { 
+            font-size: 16px; 
+        }
+
+        body {
+            font-family: "Lato", Arial, sans-serif;
+            color: #2c5f7d;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #e8f4f8 0%, #ffffff 50%, #e8f4f8 100%);
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(135, 206, 250, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(176, 224, 230, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* =====================================
+           BURBUJAS ANIMADAS
+        ===================================== */
+        .blob-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            background: radial-gradient(circle, rgba(135, 206, 250, 0.15) 0%, rgba(173, 216, 230, 0.05) 100%);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .blob:nth-child(1) { width: 300px; height: 300px; top: -100px; left: -100px; animation-duration: 25s; }
+        .blob:nth-child(2) { width: 200px; height: 200px; bottom: -50px; left: 20%; animation-duration: 18s; animation-delay: -5s; }
+        .blob:nth-child(3) { width: 400px; height: 400px; top: 20%; right: -150px; animation-duration: 30s; animation-delay: -10s; }
+        .blob:nth-child(4) { width: 150px; height: 150px; bottom: 20%; right: 10%; animation-duration: 15s; animation-delay: -3s; }
+        .blob:nth-child(5) { width: 250px; height: 250px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-duration: 22s; animation-delay: -7s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* =====================================
+           TRANSICIÓN CIRCULAR
+        ===================================== */
+        .transition-circle {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #4a90e2 0%, #5dade2 100%);
+            border-radius: 50%;
+            z-index: 9998;
+            transform: scale(0);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .transition-circle.expanding {
+            transform: scale(50);
+        }
+
+        /* =====================================
+           HEADER
+        ===================================== */
+        header {
+            background: linear-gradient(135deg, #87ceeb 0%, #add8e6 100%);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border-bottom: 3px solid #4a90e2;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+            position: relative;
+            z-index: 1;
+        }
+
+        header h1 {
+            font-size: 2.3rem;
+            font-weight: bold;
+            color: #2c5f7d;
+            text-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #2c5f7d;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* =====================================
+           MAIN CONTENT
+        ===================================== */
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* =====================================
+           WELCOME CARD (GLASSMORPHISM)
+        ===================================== */
+        .welcome-card {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            padding: 2.5rem 2rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(135, 206, 250, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(74, 144, 226, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            text-align: center;
+        }
+
+        .welcome-card h2 {
+            font-size: 2rem;
+            color: #4a90e2;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
+        }
+
+        .welcome-card p {
+            font-size: 1.1rem;
+            color: #2c5f7d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        /* ESTILO CORREGIDO DE IMAGEN */
+        .welcome-card img {
+            display: block;
+            margin: 1.5rem auto;
+            max-width: 350px;
+            width: 100%;
+            height: auto;
+            /* Se eliminaron los filtros que oscurecían la imagen original */
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
+            transition: transform 0.3s ease;
+        }
+
+        .welcome-card img:hover {
+            transform: scale(1.02);
+        }
+
+        /* =====================================
+           BOTONES CIRCULARES
+        ===================================== */
+        .btn-list ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .btn-list a {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            border: 3px solid rgba(135, 206, 250, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+        }
+
+        .btn-list a i { font-size: 2em; color: #4a90e2; z-index: 2; transition: all 0.3s ease; }
+        .btn-list a .label { position: absolute; z-index: 2; color: #fff; font-size: 1.1rem; font-weight: 600; opacity: 0; transition: opacity 0.3s ease; }
+
+        .btn-list a::after {
+            content: "";
+            position: absolute;
+            top: -100%; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #4a90e2 0%, #5dade2 100%);
+            border-radius: 50%;
+            transition: top 0.4s ease;
+            z-index: 1;
+        }
+
+        .btn-list a:hover::after { top: 0; }
+        .btn-list a:hover i { opacity: 0; }
+        .btn-list a:hover .label { opacity: 1; }
+
+        /* =====================================
+           FOOTER
+        ===================================== */
+        footer {
+            background: linear-gradient(135deg, #87ceeb 0%, #add8e6 100%);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border-top: 3px solid #4a90e2;
+            box-shadow: 0 -4px 12px rgba(74, 144, 226, 0.15);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 500px) {
+            header h1 { font-size: 1.5rem; }
+            .welcome-card { padding: 1.8rem 1.2rem; }
+            .welcome-card img { max-width: 250px; }
+            .btn-list a { width: 85px; height: 85px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blob-container">
+        <div class="blob"></div><div class="blob"></div><div class="blob"></div><div class="blob"></div><div class="blob"></div>
+    </div>
+
+    <div class="transition-circle" id="transitionCircle"></div>
+
+    <header>
+        <h1>Apex Auto Systems</h1>
+        <p>Gestión de inventario inspirada en la frescura de Bonafont</p>
+    </header>
+
+    <main>
+        <div class="welcome-card">
+            <h2>Optimiza tu inventario con facilidad</h2>
+            
+            <img src="{{ url_for('static', filename='img/by.png') }}" 
+                 alt="Apex Systems" 
+                 onerror="this.onerror=null; this.src='https://placehold.co/400x200/e8f4f8/2c5f7d?text=Apex+Auto+Systems';">
+            
+            <p>Apex te ayuda a administrar tu stock de manera inteligente, eficiente y sencilla.</p>
+
+            <div class="btn-list">
+                <ul>
+                    <li>
+                        <a href="{{ url_for('main.login') }}" id="loginBtn">
+                            <i class="ion-wrench"></i>
+                            <span class="label">Ingresar</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Apex Auto System | Todos los derechos reservados</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginBtn = document.getElementById('loginBtn');
+            const circle = document.getElementById('transitionCircle');
+
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetUrl = this.href;
+                    
+                    const btnRect = this.getBoundingClientRect();
+                    const btnCenterX = btnRect.left + btnRect.width / 2;
+                    const btnCenterY = btnRect.top + btnRect.height / 2;
+                    
+                    circle.style.left = (btnCenterX - 50) + 'px';
+                    circle.style.top = (btnCenterY - 50) + 'px';
+                    
+                    circle.classList.add('expanding');
+                    
+                    setTimeout(function() {
+                        window.location.href = targetUrl;
+                    }, 400);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
