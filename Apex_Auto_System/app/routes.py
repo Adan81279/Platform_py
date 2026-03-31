@@ -11,7 +11,7 @@ from datetime import datetime
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
-def guardar_foto(file, nombre_base):
+def guardar_foto(file, nombre_base, foto_actual=None):
     """Función auxiliar para procesar y guardar la imagen de perfil"""
     if file and file.filename != '':
         # Aseguramos un nombre de archivo seguro y único
@@ -19,13 +19,13 @@ def guardar_foto(file, nombre_base):
         filename = secure_filename(f"{nombre_base.replace(' ', '_')}_{int(datetime.utcnow().timestamp())}{ext}")
         
         # Ruta: app/static/img/usuarios/
-        upload_path = os.path.join('app', 'static', 'img', 'usuarios')
+        upload_path = os.path.join(current_app.root_path, 'static', 'img', 'usuarios')
         if not os.path.exists(upload_path):
             os.makedirs(upload_path)
             
         file.save(os.path.join(upload_path, filename))
         return filename
-    return "default.png"
+    return foto_actual if foto_actual else "default.png"
 
 @main_bp.route('/')
 def index():
@@ -60,6 +60,99 @@ def logout():
     logout_user()
     flash('Has cerrado sesión exitosamente.', 'info')
     return redirect(url_for('main.index'))
+
+# --- RUTA PARA REPORTES ---
+
+@main_bp.route('/reportes')
+@login_required
+def reportes():
+    """Vista de reportes de fallas"""
+    return render_template('auth/reportes.html')
+
+# --- RUTAS CRUD PARA VEHÍCULOS ---
+
+@main_bp.route('/vehiculos')
+@login_required
+def vehiculos():
+    """Vista principal de gestión de vehículos"""
+    vehiculos = list(db.vehiculos.find())
+    lugares = list(db.lugares.find())
+    return render_template('auth/vehiculos.html', vehiculos=vehiculos, lugares=lugares)
+
+@main_bp.route('/vehiculos/add', methods=['POST'])
+@login_required
+def add_vehiculo():
+    """Agregar un nuevo vehículo vía AJAX"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No se recibieron datos'}), 400
+
+    eco = data.get('eco', '').strip()
+    if db.vehiculos.find_one({'eco': eco}):
+        return jsonify({'error': f'El ECO {eco} ya existe'}), 400
+
+    nuevo_vehiculo = {
+        'eco': eco,
+        'placas': data.get('placas', '').strip(),
+        'anio': data.get('anio'),
+        'marca': data.get('marca', '').strip(),
+        'modelo': data.get('modelo', '').strip(),
+        'kilometraje': data.get('kilometraje', 0),
+        'conductor': data.get('conductor', '').strip(),
+        'estado': data.get('estado', 'Activo'),
+        'lugar': data.get('lugar', ''),
+        'fecha_registro': datetime.utcnow()
+    }
+    
+    try:
+        db.vehiculos.insert_one(nuevo_vehiculo)
+        return jsonify({'message': 'Vehículo guardado correctamente'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/vehiculos/<id>', methods=['GET'])
+@login_required
+def get_vehiculo(id):
+    """Obtener datos de un vehículo para el modal de edición/ver"""
+    try:
+        vehiculo = db.vehiculos.find_one({'_id': ObjectId(id)})
+        if vehiculo:
+            vehiculo['_id'] = str(vehiculo['_id'])
+            return jsonify(vehiculo)
+        return jsonify({'error': 'Vehículo no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/vehiculos/update/<id>', methods=['POST'])
+@login_required
+def update_vehiculo(id):
+    """Actualizar datos de un vehículo"""
+    data = request.get_json()
+    try:
+        updated_data = {
+            'placas': data.get('placas', '').strip(),
+            'anio': data.get('anio'),
+            'marca': data.get('marca', '').strip(),
+            'modelo': data.get('modelo', '').strip(),
+            'kilometraje': data.get('kilometraje'),
+            'conductor': data.get('conductor', '').strip(),
+            'estado': data.get('estado'),
+            'lugar': data.get('lugar')
+        }
+        db.vehiculos.update_one({'_id': ObjectId(id)}, {'$set': updated_data})
+        return jsonify({'message': 'Vehículo actualizado correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/vehiculos/delete/<id>', methods=['DELETE'])
+@login_required
+def delete_vehiculo(id):
+    """Eliminar un vehículo"""
+    try:
+        db.vehiculos.delete_one({'_id': ObjectId(id)})
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # --- RUTAS CRUD PARA MATERIALES ---
 
@@ -259,6 +352,62 @@ def get_user(id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@main_bp.route('/user/update/<id>', methods=['POST'])
+@login_required
+def update_user(id):
+    """Actualizar datos de un usuario"""
+    nombre = request.form.get('nombre')
+    correo = request.form.get('correo')
+    password = request.form.get('password')
+    tipo = int(request.form.get('tipo_usuario', 2))
+    foto = request.files.get('foto_usuario')
+    
+    try:
+        # Obtener usuario actual
+        usuario_actual = db.users.find_one({'_id': ObjectId(id)})
+        if not usuario_actual:
+            flash('Usuario no encontrado', 'danger')
+            return redirect(url_for('main.dashboard'))
+        
+        # Verificar si el correo ya existe en otro usuario
+        if correo != usuario_actual['correo']:
+            existe = db.users.find_one({'correo': correo, '_id': {'$ne': ObjectId(id)}})
+            if existe:
+                flash('El correo ya está registrado por otro usuario', 'danger')
+                return redirect(url_for('main.dashboard'))
+        
+        # Guardar nueva foto si se proporcionó
+        nombre_foto = guardar_foto(foto, nombre, usuario_actual.get('foto_usuario_url'))
+        
+        # Preparar datos de actualización
+        datos_actualizar = {
+            'nombre': nombre,
+            'correo': correo,
+            'tipo_usuario': tipo,
+            'foto_usuario_url': nombre_foto
+        }
+        
+        # Actualizar contraseña solo si se proporcionó
+        if password and password.strip():
+            from werkzeug.security import generate_password_hash
+            datos_actualizar['password'] = generate_password_hash(password)
+        
+        # Actualizar en la base de datos
+        result = db.users.update_one(
+            {'_id': ObjectId(id)},
+            {'$set': datos_actualizar}
+        )
+        
+        if result.modified_count > 0:
+            flash('Usuario actualizado correctamente', 'success')
+        else:
+            flash('No se realizaron cambios', 'info')
+            
+    except Exception as e:
+        flash(f'Error al actualizar usuario: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
 @main_bp.route('/user/delete/<id>', methods=['DELETE'])
 @login_required
 def delete_user(id):
@@ -267,7 +416,7 @@ def delete_user(id):
     Usuario.eliminar_usuario(db, id)
     return jsonify({'success': True})
 
-# --- RUTAS CRUD PARA LUGARES (JSON ESTRICTO) ---
+# --- RUTAS CRUD PARA LUGARES ---
 
 @main_bp.route('/lugares')
 @login_required
@@ -279,9 +428,7 @@ def lugares():
 @main_bp.route('/lugares/add', methods=['POST'])
 @login_required
 def add_lugar():
-    # Priorizamos JSON, luego Form
     data = request.get_json(silent=True) or request.form
-    
     if not data:
         return jsonify({'message': 'No se recibieron datos (Vacío)'}), 400
 
@@ -304,7 +451,6 @@ def add_lugar():
 @main_bp.route('/lugares/<id>', methods=['GET'])
 @login_required
 def get_lugar(id):
-    """Obtener datos de un lugar"""
     try:
         lugar = db.lugares.find_one({'_id': ObjectId(id)})
         if lugar:
@@ -321,7 +467,6 @@ def get_lugar(id):
 @login_required
 def update_lugar(id):
     data = request.get_json(silent=True) or request.form
-    
     if not data:
         return jsonify({'message': 'No se recibieron datos para actualizar'}), 400
 
@@ -332,15 +477,12 @@ def update_lugar(id):
         return jsonify({'message': 'El nombre es obligatorio'}), 400
 
     try:
-        # Importante: Asegurar que el id sea un ObjectId válido
         result = db.lugares.update_one(
             {'_id': ObjectId(id)},
             {'$set': {'nombre': nombre, 'estado': estado}}
         )
-        
         if result.matched_count == 0:
             return jsonify({'message': 'Lugar no encontrado'}), 404
-            
         return jsonify({'message': 'Actualizado correctamente'}), 200
     except Exception as e:
         return jsonify({'message': f'Error: {str(e)}'}), 500
@@ -348,7 +490,6 @@ def update_lugar(id):
 @main_bp.route('/lugares/<id>', methods=['DELETE'])
 @login_required
 def delete_lugar(id):
-    """Eliminar un lugar"""
     try:
         db.lugares.delete_one({'_id': ObjectId(id)})
         return jsonify({'message': 'Lugar eliminado correctamente'}), 200

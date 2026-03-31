@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Gestión de Vehículos - Apex Auto System</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: "Poppins", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        /* ESTILOS DEL HEADER Y NAV (UNIFICADOS) */
+        .header-section {
+            background-color: white;
+            padding: 10px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        .logo {
+            width: 140px;
+            height: auto;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 8px 14px;
+            text-decoration: none;
+            color: #555;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link-custom:hover,
+        .nav-link-custom.active {
+            color: #fff;
+            background-color: #3182ce;
+        }
+        .nav-link-custom i {
+            margin-right: 6px;
+            font-size: 15px;
+        }
+        .user-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar-header {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3182ce;
+        }
+        .user-name-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* ESTILOS DE LA TARJETA PRINCIPAL Y FILTROS (ESTILO IMAGEN REFERENCIA) */
+        .main-panel-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            margin-bottom: 40px;
+        }
+        .panel-title-container {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #2b6cb0;
+        }
+        .panel-title-container i { font-size: 2rem; margin-bottom: 5px; }
+        .panel-title { font-size: 22px; font-weight: 700; position: relative; }
+        .panel-title::after {
+            content: ""; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 3px; background-color: #2b6cb0;
+        }
+
+        /* Contenedor de filtros superior (Estilo imagen) */
+        .filter-header-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .workplace-info { font-size: 13px; color: #4a5568; display: flex; align-items: center; gap: 5px; }
+        .workplace-info i { color: #3182ce; }
+        .filter-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        
+        .search-input-group { position: relative; flex-grow: 1; min-width: 250px; }
+        .search-input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #a0aec0; }
+        .search-input-pill {
+            width: 100%; padding: 8px 12px 8px 35px; border-radius: 8px;
+            border: 1px solid #e2e8f0; font-size: 13px;
+        }
+        
+        .select-filter-pill {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #3182ce;
+            color: #3182ce; font-size: 13px; font-weight: 500; background-color: white;
+            appearance: none; -webkit-appearance: none; cursor: pointer;
+            min-width: 150px; text-align: center;
+        }
+
+        .btn-add-custom {
+            background-color: #3182ce; color: white; padding: 8px 16px;
+            border-radius: 8px; border: none; font-weight: 600; font-size: 13px;
+            display: flex; align-items: center; gap: 5px; margin-left: auto;
+        }
+
+        /* ESTILOS DE LA TABLA (IGUALES A DASHBOARD/LUGARES) */
+        .table-custom-clear { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-custom-clear thead th {
+            color: #718096; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 12px 15px; border-bottom: 1px solid #edf2f7; font-weight: 600;
+        }
+        .table-custom-clear tbody td {
+            color: #4a5568; font-size: 13px; padding: 12px 15px; vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .table-custom-clear thead th i, .table-custom-clear tbody td i { margin-right: 5px; }
+
+        /* Badges de Estado (Como en la imagen) */
+        .badge-status-activo { background-color: #c6f6d5; color: #22543d; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-status-mantenimiento { background-color: #feebc8; color: #744210; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-status-inactivo { background-color: #edf2f7; color: #4a5568; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+
+        /* Iconos de acciones redondos (Como en la imagen) */
+        .btn-action-round { width: 32px; height: 32px; border-radius: 50%; border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .btn-action-view { background-color: #90cdf4; } /* Celeste claro */
+        .btn-action-edit { background-color: #fbd38d; } /* Naranja claro */
+        .btn-action-delete { background-color: #feb2b2; } /* Rojo claro */
+        
+        .actions-cell { display: flex; gap: 8px; justify-content: center; }
+
+        /* Estilos específicos para Marca/Modelo (negrita arriba, normal abajo) */
+        .v-marca { font-weight: 600; color: #2d3748; display: block; }
+        .v-modelo { font-size: 11px; color: #718096; }
+
+    </style>
+</head>
+<body>
+
+    <header class="header-section">
+        <img src="{{ url_for('static', filename='img/FontTrack.png') }}" alt="Logo" class="logo" onclick="window.location.href='{{ url_for('main.index') }}'" />
+        <nav class="nav-links">
+            <a href="{{ url_for('main.dashboard') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.dashboard' else '' }}"><i class="bi bi-person-badge"></i>Usuarios</a>
+            <a href="{{ url_for('main.lugares') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.lugares' else '' }}"><i class="bi bi-geo-alt"></i>Lugares</a>
+            <a href="{{ url_for('main.materiales') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.materiales' else '' }}"><i class="bi bi-box-seam"></i>Materiales</a>
+            <a href="{{ url_for('main.vehiculos') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.vehiculos' else '' }}"><i class="bi bi-car-front"></i>Vehículos</a>
+            <a href="{{ url_for('main.reportes') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.reportes' else '' }}"><i class="bi bi-file-earmark-bar-graph"></i>Reportes</a>
+        </nav>
+        <div class="user-profile-header">
+            <img src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}" class="user-avatar-header" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';" />
+            <span class="user-name-header">{{ current_user.nombre }}</span>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-sm btn-outline-danger ms-2">Salir</a>
+        </div>
+    </header>
+
+    <div class="container-xl">
+        <div class="main-panel-card">
+            
+            <div class="panel-title-container">
+                <i class="bi bi-car-front"></i>
+                <h2 class="panel-title">Gestión de Vehículos</h2>
+            </div>
+
+            <div class="filter-header-card">
+                <div class="workplace-info">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    Tu lugar de trabajo: <strong>Lerma</strong> 
+                    <span class="text-muted ms-3">| Filtra para ver vehículos de otros lugares</span>
+                </div>
+                <div class="filter-controls">
+                    <div class="search-input-group">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchVehiculos" class="search-input-pill" placeholder="Buscar por ECO, placas, marca...">
+                    </div>
+                    
+                    <select id="filterLugar" class="select-filter-pill">
+                        <option value="todos">Todos los lugares</option>
+                        {% for lugar in lugares %}
+                        <option value="{{ lugar.nombre }}">{{ lugar.nombre }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select id="filterEstado" class="select-filter-pill ms-2">
+                        <option value="todos">Todos los estados</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+
+                    <button class="btn btn-add-custom" onclick="abrirModalNuevo()">
+                        <i class="bi bi-plus-lg"></i> Registrar Vehículo
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom-clear" id="tablaVehiculos">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-tag"></i>ECO</th>
+                            <th><i class="bi bi-credit-card-2-front"></i>Placas</th>
+                            <th><i class="bi bi-car-front"></i>Marca/Modelo</th>
+                            <th><i class="bi bi-calendar-event"></i>Año</th>
+                            <th><i class="bi bi-speedometer2"></i>Kilometraje</th>
+                            <th><i class="bi bi-person"></i>Conductor</th>
+                            <th><i class="bi bi-check-circle"></i>Estado</th>
+                            <th><i class="bi bi-geo-alt"></i>Lugar</th>
+                            <th class="text-center"><i class="bi bi-gear"></i>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vehiculo in vehiculos %}
+                        <tr data-lugar="{{ vehiculo.lugar }}" data-estado="{{ vehiculo.estado }}">
+                            <td class="fw-bold text-primary">{{ vehiculo.eco }}</td>
+                            <td>{{ vehiculo.placas }}</td>
+                            <td>
+                                <span class="v-marca">{{ vehiculo.marca }}</span>
+                                <span class="v-modelo">{{ vehiculo.modelo }}</span>
+                            </td>
+                            <td>{{ vehiculo.anio }}</td>
+                            <td>{{ "{:,}".format(vehiculo.kilometraje) }} km</td>
+                            <td>{{ vehiculo.conductor if vehiculo.conductor else '<span class="text-muted fst-italic">Sin asignar</span>' | safe }}</td>
+                            <td>
+                                {% if vehiculo.estado == 'Activo' %}
+                                    <span class="badge-status-activo">Activo</span>
+                                {% elif vehiculo.estado == 'Mantenimiento' %}
+                                    <span class="badge-status-mantenimiento">Mantenimiento</span>
+                                {% else %}
+                                    <span class="badge-status-inactivo">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ vehiculo.lugar }}</td>
+                            <td class="actions-cell">
+                                <button class="btn-action-round btn-action-view btnVer" data-id="{{ vehiculo._id }}" title="Ver detalles"><i class="bi bi-eye"></i></button>
+                                <button class="btn-action-round btn-action-edit btnEditar" data-id="{{ vehiculo._id }}" title="Editar"><i class="bi bi-pencil"></i></button>
+                                <button class="btn-action-round btn-action-delete btnEliminar" data-id="{{ vehiculo._id }}" title="Eliminar"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRegistro" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius: 15px;">
+                <form id="formVehiculo">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" id="vehiculoId" name="vehiculoId">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold" id="modalTitle">Registrar Vehículo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-500">Número ECO</label>
+                                <input type="text" id="eco" name="eco" class="form-control form-control-pill" required placeholder="Ej: ECO001">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-500">Placas</label>
+                                <input type="text" id="placas" name="placas" class="form-control form-control-pill" required placeholder="Ej: ABC1234">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-500">Año</label>
+                                <input type="number" id="anio" name="anio" class="form-control form-control-pill" required min="1900" max="2099">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Marca</label>
+                                <input type="text" id="marca" name="marca" class="form-control form-control-pill" required placeholder="Ej: Toyota">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Modelo</label>
+                                <input type="text" id="modelo" name="modelo" class="form-control form-control-pill" required placeholder="Ej: Hilux">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Kilometraje Actual</label>
+                                <div class="input-group">
+                                    <input type="number" id="kilometraje" name="kilometraje" class="form-control form-control-pill" required min="0">
+                                    <span class="input-group-text bg-white border-pill-end">km</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Conductor Asignado</label>
+                                <input type="text" id="conductor" name="conductor" class="form-control form-control-pill" placeholder="Ej: Juan Pérez">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Estado</label>
+                                <select id="estado" name="estado" class="form-select form-control-pill" required>
+                                    <option value="Activo">Activo</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-500">Lugar Base</label>
+                                <select id="lugar" name="lugar" class="form-select form-control-pill" required>
+                                    <option value="" disabled selected>Selecciona lugar</option>
+                                    {% for lugar in lugares %}
+                                    <option value="{{ lugar.nombre }}">{{ lugar.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4" style="background-color: #3182ce; border: none;">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalle" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header border-0 bg-light-blue" style="border-radius: 15px 15px 0 0;">
+                    <h5 class="modal-title fw-bold text-primary"><i class="bi bi-car-front me-2"></i>Información del Vehículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 id="detEco" class="fw-bold text-primary mb-1"></h2>
+                        <p id="detPlacas" class="text-muted fs-5"></p>
+                        <div id="detEstadoBadge"></div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-6"><small class="text-muted d-block">Marca/Modelo</small><strong id="detMarcaModelo"></strong></div>
+                        <div class="col-6"><small class="text-muted d-block">Año</small><strong id="detAnio"></strong></div>
+                        <div class="col-6"><small class="text-muted d-block">Kilometraje</small><strong id="detKilometraje"></strong></div>
+                        <div class="col-6"><small class="text-muted d-block">Lugar</small><strong id="detLugar"></strong></div>
+                        <div class="col-12"><small class="text-muted d-block">Conductor Asignado</small><strong id="detConductor"></strong></div>
+                    </div>
+                    <hr>
+                    <small class="text-muted">ID Sistema: <span id="detId" class="font-monospace"></span></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const csrfToken = $('meta[name="csrf-token"]').attr("content");
+
+        // Configuración AJAX global para CSRF
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                }
+            }
+        });
+
+        // --- FUNCIONES DE FILTRADO Y BÚSQUEDA ---
+
+        // 1. Función de Búsqueda General (ECO, Placas, Marca...)
+        $("#searchVehiculos").on("keyup", function() {
+            aplicarFiltrosCombinados();
+        });
+
+        // 2. Función de Filtrado por Lugar
+        $("#filterLugar").on("change", function() {
+            aplicarFiltrosCombinados();
+        });
+
+        // Adicional: Filtrado por Estado
+        $("#filterEstado").on("change", function() {
+            aplicarFiltrosCombinados();
+        });
+
+        // Función maestra que combina Búsqueda + Lugar + Estado
+        function aplicarFiltrosCombinados() {
+            const searchText = $("#searchVehiculos").val().toLowerCase();
+            const lugarFilter = $("#filterLugar").val();
+            const estadoFilter = $("#filterEstado").val();
+
+            $("#tablaVehiculos tbody tr").each(function() {
+                const row = $(this);
+                const textMatch = row.text().toLowerCase().indexOf(searchText) > -1;
+                const lugarMatch = (lugarFilter === "todos") || (row.data("lugar") === lugarFilter);
+                const estadoMatch = (estadoFilter === "todos") || (row.data("estado") === estadoFilter);
+
+                if (textMatch && lugarMatch && estadoMatch) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+        }
+
+
+        // --- FUNCIONES CRUD ---
+
+        function abrirModalNuevo() {
+            $('#vehiculoId').val(''); 
+            $('#formVehiculo')[0].reset();
+            $('#modalTitle').text('Registrar Vehículo');
+            $('#eco').prop('readonly', false); // ECO editable al crear
+            $('#modalRegistro').modal('show');
+        }
+
+        $(document).ready(function () {
+
+            // VER DETALLES (R de CRUD)
+            $('.btnVer').on('click', function () {
+                let id = $(this).data('id');
+                $.get(`/vehiculos/${id}`, function (data) {
+                    $('#detId').text(data._id);
+                    $('#detEco').text(data.eco);
+                    $('#detPlacas').text(data.placas);
+                    $('#detMarcaModelo').text(`${data.marca} ${data.modelo}`);
+                    $('#detAnio').text(data.anio);
+                    $('#detKilometraje').text(Number(data.kilometraje).toLocaleString('en-US') + ' km');
+                    $('#detLugar').text(data.lugar);
+                    $('#detConductor').text(data.conductor || 'Sin asignar');
+                    
+                    // Badge de estado dinámico
+                    let badgeHtml = '';
+                    if (data.estado === 'Activo') badgeHtml = '<span class="badge-status-activo fs-6">Activo</span>';
+                    else if (data.estado === 'Mantenimiento') badgeHtml = '<span class="badge-status-mantenimiento fs-6">Mantenimiento</span>';
+                    else badgeHtml = '<span class="badge-status-inactivo fs-6">Inactivo</span>';
+                    $('#detEstadoBadge').html(badgeHtml);
+
+                    $('#modalDetalle').modal('show');
+                });
+            });
+
+            // ABRIR EDITAR (U de CRUD)
+            $('.btnEditar').on('click', function () {
+                let id = $(this).data('id');
+                $.get(`/vehiculos/${id}`, function (data) {
+                    $('#vehiculoId').val(data._id); 
+                    $('#eco').val(data.eco).prop('readonly', true); // ECO no editable al editar
+                    $('#placas').val(data.placas);
+                    $('#anio').val(data.anio);
+                    $('#marca').val(data.marca);
+                    $('#modelo').val(data.modelo);
+                    $('#kilometraje').val(data.kilometraje);
+                    $('#conductor').val(data.conductor);
+                    $('#estado').val(data.estado);
+                    $('#lugar').val(data.lugar);
+
+                    $('#modalTitle').text('Editar Vehículo');
+                    $('#modalRegistro').modal('show');
+                });
+            });
+
+            // ELIMINAR (D de CRUD)
+            $('.btnEliminar').on('click', function () {
+                let id = $(this).data('id');
+                let fila = $(this).closest('tr');
+                let eco = fila.find('td:first').text();
+
+                if (confirm(`¿Estás seguro de eliminar el vehículo ${eco}? Esta acción no se puede deshacer.`)) {
+                    $.ajax({
+                        url: `/vehiculos/delete/${id}`,
+                        type: 'DELETE',
+                        success: function (response) {
+                            fila.fadeOut(400, function() { $(this).remove(); });
+                            // Opcional: Mostrar alerta de éxito
+                        },
+                        error: function(xhr) {
+                            alert(xhr.responseJSON.error || 'Error al eliminar');
+                        }
+                    });
+                }
+            });
+
+            // GUARDAR / ACTUALIZAR (C / U de CRUD)
+            $('#formVehiculo').on('submit', function (e) {
+                e.preventDefault();
+                const id = $('#vehiculoId').val();
+                const isNew = !id;
+                const url = isNew ? '/vehiculos/add' : `/vehiculos/update/${id}`;
+                
+                // Recopilar datos manualmente para asegurar tipos (números)
+                const payload = {
+                    eco: $('#eco').val().trim(),
+                    placas: $('#placas').val().trim(),
+                    anio: parseInt($('#anio').val()),
+                    marca: $('#marca').val().trim(),
+                    modelo: $('#modelo').val().trim(),
+                    kilometraje: parseInt($('#kilometraje').val()),
+                    conductor: $('#conductor').val().trim(),
+                    estado: $('#estado').val(),
+                    lugar: $('#lugar').val()
+                };
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    success: function (response) {
+                        $('#modalRegistro').modal('hide');
+                        location.reload(); // Recargar para ver cambios
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON.error || 'Error al guardar');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

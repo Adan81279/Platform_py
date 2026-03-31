@@ -245,86 +245,42 @@
   </head>
   <body>
     <header class="header-section">
-      <img
-        src="{{ url_for('static', filename='img/FontTrack.png') }}"
-        alt="Logo"
-        class="logo"
-        onclick="window.location.href='{{ url_for('main.index') }}'"
-      />
+      <img src="{{ url_for('static', filename='img/FontTrack.png') }}" alt="Logo" class="logo" onclick="window.location.href='{{ url_for('main.index') }}'" />
       <nav class="nav-links">
-        <a
-          href="{{ url_for('main.dashboard') }}"
-          class="nav-link-custom {{ 'active' if request.endpoint == 'main.dashboard' else '' }}"
-        >
-          <i class="bi bi-person-badge"></i>Usuarios
-        </a>
-
-        <a
-          href="{{ url_for('main.lugares') }}"
-          class="nav-link-custom {{ 'active' if request.endpoint == 'main.lugares' else '' }}"
-        >
-          <i class="bi bi-geo-alt"></i>Lugares
-        </a>
-
-        <a
-          href="{{ url_for('main.materiales') }}"
-          class="nav-link-custom {{ 'active' if request.endpoint == 'main.materiales' else '' }}"
-        >
-          <i class="bi bi-box-seam"></i>Materiales
-        </a>
-
-        <a href="#" class="nav-link-custom">
-          <i class="bi bi-car-front"></i>Vehículos
-        </a>
+        <a href="{{ url_for('main.dashboard') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.dashboard' else '' }}"><i class="bi bi-person-badge"></i>Usuarios</a>
+        <a href="{{ url_for('main.lugares') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.lugares' else '' }}"><i class="bi bi-geo-alt"></i>Lugares</a>
+        <a href="{{ url_for('main.materiales') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.materiales' else '' }}"><i class="bi bi-box-seam"></i>Materiales</a>
+        <a href="{{ url_for('main.vehiculos') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.vehiculos' else '' }}"><i class="bi bi-car-front"></i>Vehículos</a>
+        <a href="{{ url_for('main.reportes') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.reportes' else '' }}"><i class="bi bi-file-earmark-bar-graph"></i>Reportes</a>
       </nav>
       <div class="user-profile-header">
-        <img
-          src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}"
-          class="user-avatar-header"
-          onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';"
-        />
+        <img src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}" class="user-avatar-header" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';" />
         <span class="user-name-header">{{ current_user.nombre }}</span>
-        <a
-          href="{{ url_for('main.logout') }}"
-          class="btn btn-sm btn-outline-danger ms-2"
-          >Salir</a
-        >
+        <a href="{{ url_for('main.logout') }}" class="btn btn-sm btn-outline-danger ms-2">Salir</a>
       </div>
     </header>
 
     <div class="container-xl">
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %}
-      <div
-        class="alert alert-{{ category }} alert-dismissible fade show shadow-sm"
-      >
-        {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-        ></button>
-      </div>
-      {% endfor %} {% endif %} {% endwith %}
+      {% with messages = get_flashed_messages(with_categories=true) %} 
+        {% if messages %} 
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %} 
+        {% endif %} 
+      {% endwith %}
 
       <div class="main-panel-card">
         <h2 class="panel-title">Gestión de Usuarios</h2>
 
         <div class="search-container">
-          <input
-            type="text"
-            id="searchUsers"
-            class="search-input-pill"
-            placeholder="Buscar por nombre, correo o tipo..."
-          />
+          <input type="text" id="searchUsers" class="search-input-pill" placeholder="Buscar por nombre, correo o tipo..." />
           <i class="bi bi-search search-icon-pill"></i>
         </div>
 
-        <button
-          class="btn btn-add-user-custom"
-          data-bs-toggle="modal"
-          data-bs-target="#modalRegistro"
-        >
+        <button class="btn btn-add-user-custom" data-bs-toggle="modal" data-bs-target="#modalRegistro">
           <i class="bi bi-person-plus me-2"></i> Registrar Usuario
         </button>
 
@@ -341,47 +297,69 @@
             </thead>
             <tbody id="userTableBody">
               {% for usuario in usuarios %}
-              <tr>
-                <td>{{ usuario.nombre }}</td>
-                <td>{{ usuario.correo }}</td>
-                <td>
-                  <span
-                    class="{{ 'badge badge-admin' if usuario.tipo_usuario == 1 else 'badge badge-user' }}"
-                  >
+               <tr>
+                 <td>{{ usuario.nombre }}</td>
+                 <td>{{ usuario.correo }}</td>
+                 <td>
+                  <span class="{{ 'badge-admin' if usuario.tipo_usuario == 1 else 'badge-user' }}">
                     {{ 'Admin' if usuario.tipo_usuario == 1 else 'Usuario' }}
                   </span>
-                </td>
-                <td>
-                  <img
-                    src="{{ url_for('static', filename='img/usuarios/' + (usuario.foto_usuario_url if usuario.foto_usuario_url else 'default.png')) }}"
-                    class="user-avatar-table"
-                    onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ usuario.nombre }}&background=random';"
-                  />
-                </td>
-                <td>
-                  <button
-                    class="btn-action-view btn-sm btnVer"
-                    data-id="{{ usuario._id }}"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button
-                    class="btn-action-edit btn-sm btnEditar"
-                    data-id="{{ usuario._id }}"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button
-                    class="btn-action-delete btn-sm btnEliminar"
-                    data-id="{{ usuario._id }}"
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
+                 </td>
+                 <td>
+                  <img src="{{ url_for('static', filename='img/usuarios/' + (usuario.foto_usuario_url if usuario.foto_usuario_url else 'default.png')) }}" class="user-avatar-table" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ usuario.nombre }}&background=random';" />
+                 </td>
+                 <td>
+                  <button class="btn-action-view btn-sm btnVer" data-id="{{ usuario._id }}"><i class="bi bi-eye"></i></button>
+                  <button class="btn-action-edit btn-sm btnEditar" data-id="{{ usuario._id }}"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-action-delete btn-sm btnEliminar" data-id="{{ usuario._id }}"><i class="bi bi-trash"></i></button>
+                 </td>
+               </tr>
               {% endfor %}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalRegistro" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form action="{{ url_for('main.add_user') }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">Registrar Nuevo Usuario</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Nombre Completo</label>
+                <input type="text" name="nombre" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" name="correo" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <input type="password" name="password" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Tipo de Usuario</label>
+                <select name="tipo_usuario" class="form-select">
+                  <option value="2">Usuario Normal</option>
+                  <option value="1">Administrador</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Foto de Perfil</label>
+                <input type="file" name="foto_usuario" class="form-control" accept="image/*" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -391,35 +369,22 @@
         <div class="modal-content modal-details-content">
           <div class="modal-header modal-details-header">
             <h5 class="modal-title">Detalles del Usuario</h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="modal"
-            ></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4">
             <div class="row align-items-center">
               <div class="col-7">
                 <div class="detail-item">
                   <i class="bi bi-person"></i>
-                  <div>
-                    <span class="detail-label">Nombre:</span>
-                    <span id="detNombre"></span>
-                  </div>
+                  <div><span class="detail-label">Nombre:</span> <span id="detNombre"></span></div>
                 </div>
                 <div class="detail-item">
                   <i class="bi bi-envelope"></i>
-                  <div>
-                    <span class="detail-label">Correo:</span>
-                    <span id="detCorreo"></span>
-                  </div>
+                  <div><span class="detail-label">Correo:</span> <span id="detCorreo"></span></div>
                 </div>
                 <div class="detail-item">
                   <i class="bi bi-shield-check"></i>
-                  <div>
-                    <span class="detail-label">Tipo:</span>
-                    <span id="detTipo"></span>
-                  </div>
+                  <div><span class="detail-label">Tipo:</span> <span id="detTipo"></span></div>
                 </div>
               </div>
               <div class="col-5 text-center">
@@ -428,13 +393,7 @@
             </div>
           </div>
           <div class="modal-footer border-0">
-            <button
-              type="button"
-              class="btn-close-modal"
-              data-bs-dismiss="modal"
-            >
-              Cerrar
-            </button>
+            <button type="button" class="btn-close-modal" data-bs-dismiss="modal">Cerrar</button>
           </div>
         </div>
       </div>
@@ -442,66 +401,36 @@
 
     <div class="modal fade" id="modalEditar" tabindex="-1">
       <div class="modal-dialog">
-        <div class="modal-content bg-dark text-white">
-          <form id="formEditar" method="POST" enctype="multipart/form-data">
+        <div class="modal-content">
+          <form id="formEditar" action="" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="modal-header">
-              <h5 class="modal-title">Editar Usuario</h5>
-              <button
-                type="button"
-                class="btn-close btn-close-white"
-                data-bs-dismiss="modal"
-              ></button>
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title text-dark">Editar Usuario</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-dark">
+            <div class="modal-body">
               <div class="mb-3 text-center">
-                <img
-                  id="editFotoPreview"
-                  src=""
-                  class="user-avatar-table mb-2"
-                  style="width: 80px; height: 80px; border-radius: 50%"
-                />
-                <p class="text-white small">Imagen actual</p>
+                <img id="editFotoPreview" src="" class="user-avatar-table mb-2" style="width: 80px; height: 80px; border-radius: 50%" />
+                <p class="small text-muted">Foto actual (puedes cambiarla)</p>
               </div>
               <div class="mb-3">
-                <label class="form-label text-white">Nombre</label>
-                <input
-                  type="text"
-                  name="nombre"
-                  id="editNombre"
-                  class="form-control"
-                  required
-                />
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" id="editNombre" class="form-control" required />
               </div>
               <div class="mb-3">
-                <label class="form-label text-white">Correo</label>
-                <input
-                  type="email"
-                  name="correo"
-                  id="editCorreo"
-                  class="form-control"
-                  required
-                />
+                <label class="form-label">Correo</label>
+                <input type="email" name="correo" id="editCorreo" class="form-control" required />
               </div>
               <div class="mb-3">
-                <label class="form-label text-white"
-                  >Nueva Foto (Opcional)</label
-                >
-                <input
-                  type="file"
-                  name="foto_usuario"
-                  class="form-control"
-                  accept="image/*"
-                />
+                <label class="form-label">Nueva Foto (Opcional)</label>
+                <input type="file" name="foto_usuario" class="form-control" accept="image/*" id="editFotoFile" />
               </div>
               <div class="mb-3">
-                <label class="form-label text-white"
-                  >Nueva Contraseña (Opcional)</label
-                >
-                <input type="password" name="password" class="form-control" />
+                <label class="form-label">Nueva Contraseña (Opcional)</label>
+                <input type="password" name="password" class="form-control" placeholder="Dejar en blanco para no cambiar" />
               </div>
               <div class="mb-3">
-                <label class="form-label text-white">Tipo</label>
+                <label class="form-label">Tipo</label>
                 <select name="tipo_usuario" id="editTipo" class="form-select">
                   <option value="2">Usuario Normal</option>
                   <option value="1">Administrador</option>
@@ -509,13 +438,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Cancelar
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
               <button type="submit" class="btn btn-warning">Actualizar</button>
             </div>
           </form>
@@ -530,7 +453,6 @@
       $(document).ready(function () {
         const csrfToken = $('meta[name="csrf-token"]').attr("content");
 
-        // Función para obtener la URL de la imagen de forma segura
         function getImageUrl(fotoName, userName) {
           if (fotoName && fotoName !== "" && fotoName !== "None") {
             return "/static/img/usuarios/" + fotoName;
@@ -538,23 +460,18 @@
           return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
         }
 
-        // VER DETALLES
         $(document).on("click", ".btnVer", function () {
           const id = $(this).data("id");
           $.get("/user/" + id, function (data) {
             $("#detNombre").text(data.nombre);
             $("#detCorreo").text(data.correo);
             $("#detTipo").text(data.tipo_usuario == 1 ? "Admin" : "Usuario");
-
-            // IMPORTANTE: Ajustado a data.foto_usuario_url (o el nombre que envíe tu backend)
-            let foto = data.foto_usuario_url || data.foto || "";
+            let foto = data.foto_usuario_url || "default.png";
             $("#detFoto").attr("src", getImageUrl(foto, data.nombre));
-
             $("#modalDetalles").modal("show");
           });
         });
 
-        // BUSCADOR
         $("#searchUsers").on("keyup", function () {
           var value = $(this).val().toLowerCase();
           $("#userTableBody tr").filter(function () {
@@ -562,25 +479,21 @@
           });
         });
 
-        // EDITAR USUARIO
         $(document).on("click", ".btnEditar", function () {
           const id = $(this).data("id");
           $.get("/user/" + id, function (data) {
             $("#editNombre").val(data.nombre);
             $("#editCorreo").val(data.correo);
             $("#editTipo").val(data.tipo_usuario);
-
-            let foto = data.foto_usuario_url || data.foto || "";
+            let foto = data.foto_usuario_url || "default.png";
             $("#editFotoPreview").attr("src", getImageUrl(foto, data.nombre));
-
             $("#formEditar").attr("action", "/user/update/" + id);
             $("#modalEditar").modal("show");
           }).fail(function () {
-            alert("Error al obtener datos");
+            alert("Error al obtener datos del usuario");
           });
         });
 
-        // ELIMINAR USUARIO
         $(document).on("click", ".btnEliminar", function () {
           const id = $(this).data("id");
           const fila = $(this).closest("tr");
@@ -591,11 +504,26 @@
               headers: { "X-CSRFToken": csrfToken },
               success: function () {
                 fila.fadeOut();
+                setTimeout(function() {
+                  location.reload();
+                }, 500);
               },
               error: function (xhr) {
-                alert(xhr.responseJSON.error || "Error");
+                alert(xhr.responseJSON.error || "Error al eliminar usuario");
               },
             });
+          }
+        });
+
+        // Previsualización de la nueva foto antes de enviar el formulario
+        $("#editFotoFile").on("change", function() {
+          const file = this.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              $("#editFotoPreview").attr("src", e.target.result);
+            }
+            reader.readAsDataURL(file);
           }
         });
       });
