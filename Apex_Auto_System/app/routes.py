@@ -47,6 +47,62 @@ def login():
             flash(error, 'danger')
     return render_template('auth/login.html', form=form)
 
+
+@main_bp.route('/registro', methods=['POST'])
+
+def registro():
+    """Registro de nuevos usuarios desde la página de login"""
+    try:
+        nombre = request.form.get('nombre', '').strip()
+        correo = request.form.get('correo', '').strip()
+        password = request.form.get('password', '')
+        foto = request.files.get('foto_usuario')
+        
+        # Validaciones
+        if not nombre or not correo or not password:
+            return jsonify({'message': 'Todos los campos son obligatorios'}), 400
+        
+        # Validar dominio de correo
+        if not (correo.endswith('@bonafont.com') or correo.endswith('@danone.com')):
+            return jsonify({'message': 'Solo se permiten correos con dominio @bonafont.com o @danone.com'}), 400
+        
+        # Validar contraseña
+        if len(password) < 6 or not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
+            return jsonify({'message': 'La contraseña debe tener al menos 6 caracteres, una mayúscula y un número'}), 400
+        
+        # Verificar si el correo ya existe
+        existing_user = db.users.find_one({'correo': correo})
+        if existing_user:
+            return jsonify({'message': 'El correo ya está registrado'}), 400
+        
+        # Guardar foto si se proporcionó
+        nombre_foto = "default.png"
+        if foto and foto.filename:
+            nombre_foto = guardar_foto(foto, nombre)
+        
+        # Crear usuario (tipo 2 = usuario normal por defecto)
+        from werkzeug.security import generate_password_hash
+        
+        nuevo_usuario = {
+            'nombre': nombre,
+            'correo': correo,
+            'password': generate_password_hash(password),
+            'tipo_usuario': 2,  
+            'foto_usuario_url': nombre_foto,
+            'fecha_registro': datetime.utcnow()
+        }
+        
+        result = db.users.insert_one(nuevo_usuario)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Usuario registrado exitosamente',
+            'user_id': str(result.inserted_id)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'message': f'Error al registrar: {str(e)}'}), 500
+
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -169,8 +225,15 @@ def materiales():
 def add_material():
     """Agregar nuevo material con todos los campos"""
     clave = request.form.get('clave', '').strip()
+    
+    # Validación más estricta de la clave
     if not clave:
         flash('La clave del material es obligatoria.', 'danger')
+        return redirect(url_for('main.materiales'))
+    
+    # Verificar que la clave no sea solo espacios
+    if len(clave) == 0:
+        flash('La clave del material no puede estar vacía.', 'danger')
         return redirect(url_for('main.materiales'))
     
     descripcion = request.form.get('descripcion', '').strip()
@@ -178,7 +241,8 @@ def add_material():
         flash('La descripción del material es obligatoria.', 'danger')
         return redirect(url_for('main.materiales'))
     
-    existing_material = db.materiales.find_one({'clave': clave})
+    # Verificar existencia de material con misma clave (case insensitive)
+    existing_material = db.materiales.find_one({'clave': {'$regex': f'^{clave}$', '$options': 'i'}})
     if existing_material:
         flash(f'Ya existe un material con la clave "{clave}".', 'danger')
         return redirect(url_for('main.materiales'))
@@ -196,10 +260,10 @@ def add_material():
         costo = 0
     
     material = {
-        'clave': clave,
+        'clave': clave,  
         'descripcion': descripcion,
-        'generico': request.form.get('generico', '').strip(),
-        'clasificacion': request.form.get('clasificacion', ''),
+        'generico': request.form.get('generico', '').strip() or None,
+        'clasificacion': request.form.get('clasificacion', '') or None,
         'existencia': existencia,
         'costo': costo,
         'lugar_id': request.form.get('lugar_id') if request.form.get('lugar_id') else None,
@@ -211,7 +275,11 @@ def add_material():
         db.materiales.insert_one(material)
         flash(f'Material "{clave}" agregado exitosamente', 'success')
     except Exception as e:
-        flash(f'Error al guardar el material: {str(e)}', 'danger')
+        # Capturar error específico de duplicado
+        if 'duplicate key' in str(e).lower():
+            flash(f'Ya existe un material con la clave "{clave}".', 'danger')
+        else:
+            flash(f'Error al guardar el material: {str(e)}', 'danger')
     
     return redirect(url_for('main.materiales'))
 
@@ -254,7 +322,10 @@ def update_material(id):
         flash('Clave y descripción son obligatorias', 'danger')
         return redirect(url_for('main.materiales'))
     
-    existing = db.materiales.find_one({'clave': clave, '_id': {'$ne': ObjectId(id)}})
+    existing = db.materiales.find_one({
+        'clave': {'$regex': f'^{clave}$', '$options': 'i'},
+        '_id': {'$ne': ObjectId(id)}
+    })
     if existing:
         flash(f'Ya existe otro material con la clave "{clave}"', 'danger')
         return redirect(url_for('main.materiales'))
@@ -269,18 +340,24 @@ def update_material(id):
     datos = {
         'clave': clave,
         'descripcion': descripcion,
-        'generico': request.form.get('generico', '').strip(),
-        'clasificacion': request.form.get('clasificacion', ''),
+        'generico': request.form.get('generico', '').strip() or None,
+        'clasificacion': request.form.get('clasificacion', '') or None,
         'existencia': existencia,
         'costo': costo,
         'lugar_id': request.form.get('lugar_id') if request.form.get('lugar_id') else None
     }
     
     try:
-        db.materiales.update_one({'_id': ObjectId(id)}, {'$set': datos})
-        flash('Material actualizado correctamente', 'success')
+        result = db.materiales.update_one({'_id': ObjectId(id)}, {'$set': datos})
+        if result.modified_count > 0:
+            flash('Material actualizado correctamente', 'success')
+        else:
+            flash('No se realizaron cambios', 'info')
     except Exception as e:
-        flash(f'Error al actualizar: {str(e)}', 'danger')
+        if 'duplicate key' in str(e).lower():
+            flash(f'Ya existe un material con la clave "{clave}"', 'danger')
+        else:
+            flash(f'Error al actualizar: {str(e)}', 'danger')
     
     return redirect(url_for('main.materiales'))
 
@@ -495,3 +572,273 @@ def delete_lugar(id):
         return jsonify({'message': 'Lugar eliminado correctamente'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+    
+    
+    
+    # --- RUTAS PARA BACKUPS ---
+
+from app.backup_utils import BackupManager
+import platform
+
+@main_bp.route('/backups')
+@login_required
+def backups():
+    """Vista principal de gestión de backups"""
+    from datetime import datetime as dt
+    import os
+    
+    backup_manager = BackupManager(db)
+    
+    # Obtener estadísticas
+    stats = backup_manager.get_backup_stats()
+    
+    # Obtener lista de backups (últimos 50)
+    backups_list = list(db.backups.find().sort('backup_date', -1).limit(50))
+    
+    # Fecha actual para comparar expiración
+    now = dt.now()
+    
+    # Formatear backups para la vista
+    formatted_backups = []
+    for backup in backups_list:
+        # Crear una copia para no modificar el original
+        formatted = dict(backup)
+        
+        formatted['_id'] = str(backup['_id'])
+        
+        # Formatear fecha de backup
+        if isinstance(backup.get('backup_date'), datetime):
+            formatted['backup_date'] = backup['backup_date'].strftime('%d/%m/%Y %H:%M')
+            backup_date_obj = backup['backup_date']
+        else:
+            formatted['backup_date'] = str(backup.get('backup_date', 'N/A'))
+            backup_date_obj = None
+        
+        # Formatear fecha de expiración y determinar si está expirado
+        if isinstance(backup.get('expires_at'), datetime):
+            formatted['expires_at'] = backup['expires_at'].strftime('%d/%m/%Y %H:%M')
+            formatted['is_expired'] = backup['expires_at'] < now
+        else:
+            formatted['expires_at'] = 'No expira'
+            formatted['is_expired'] = False
+        
+        formatted['formatted_type'] = {
+            'complete': 'Completo',
+            'differential': 'Diferencial',
+            'incremental': 'Incremental'
+        }.get(backup.get('type', ''), backup.get('type', ''))
+        
+        formatted['formatted_size'] = backup.get('size_formatted', '0 B')
+        formatted['file_exists'] = os.path.exists(backup.get('file_path', '')) if backup.get('file_path') else False
+        formatted['status'] = backup.get('status', 'unknown')
+        formatted['type'] = backup.get('type', 'unknown')
+        
+        formatted_backups.append(formatted)
+    
+    # Agregar estadísticas de disco
+    disk_usage = backup_manager.get_disk_usage()
+    stats.update(disk_usage)
+    
+    return render_template('auth/backups.html', backups=formatted_backups, stats=stats, now=now)
+
+@main_bp.route('/backups/stats', methods=['GET'])
+@login_required
+def backups_stats():
+    """API: Obtener estadísticas de backups"""
+    backup_manager = BackupManager(db)
+    stats = backup_manager.get_backup_stats()
+    disk_usage = backup_manager.get_disk_usage()
+    stats.update(disk_usage)
+    return jsonify({'success': True, 'stats': stats})
+
+@main_bp.route('/backups/last-runs', methods=['GET'])
+@login_required
+def backups_last_runs():
+    """API: Obtener últimas ejecuciones de backups"""
+    last_backups = list(db.backups.find().sort('backup_date', -1).limit(3))
+    last_complete = None
+    last_differential = None
+    last_incremental = None
+    
+    for backup in last_backups:
+        if backup.get('type') == 'complete' and not last_complete:
+            last_complete = backup['backup_date'].strftime('%d/%m/%Y %H:%M') if isinstance(backup['backup_date'], datetime) else str(backup['backup_date'])
+        elif backup.get('type') == 'differential' and not last_differential:
+            last_differential = backup['backup_date'].strftime('%d/%m/%Y %H:%M') if isinstance(backup['backup_date'], datetime) else str(backup['backup_date'])
+        elif backup.get('type') == 'incremental' and not last_incremental:
+            last_incremental = backup['backup_date'].strftime('%d/%m/%Y %H:%M') if isinstance(backup['backup_date'], datetime) else str(backup['backup_date'])
+    
+    return jsonify({
+        'success': True,
+        'last_complete': last_complete,
+        'last_differential': last_differential,
+        'last_incremental': last_incremental,
+        'last_cleanup': 'Diario 01:00'
+    })
+
+@main_bp.route('/backups/create', methods=['POST'])
+@login_required
+def backups_create():
+    """Crear un nuevo backup"""
+    data = request.get_json()
+    backup_type = data.get('type', 'complete')
+    filename = data.get('filename', '')
+    compress = data.get('compress', True)
+    
+    backup_manager = BackupManager(db)
+    success, result = backup_manager.create_backup(backup_type, filename, compress)
+    
+    if success:
+        return jsonify({'success': True, 'message': 'Backup creado exitosamente', 'backup': result})
+    else:
+        return jsonify({'success': False, 'message': result}), 500
+
+@main_bp.route('/backups/<backup_id>', methods=['GET'])
+@login_required
+def backups_get(backup_id):
+    """Obtener detalles de un backup"""
+    try:
+        backup = db.backups.find_one({'_id': ObjectId(backup_id)})
+        if backup:
+            backup['_id'] = str(backup['_id'])
+            if isinstance(backup.get('backup_date'), datetime):
+                backup['backup_date'] = backup['backup_date'].strftime('%d/%m/%Y %H:%M')
+            if isinstance(backup.get('expires_at'), datetime):
+                backup['expires_at'] = backup['expires_at'].strftime('%d/%m/%Y %H:%M')
+            backup['size'] = backup.get('size_formatted', '0 B')
+            backup['file_exists'] = os.path.exists(backup.get('file_path', '')) if backup.get('file_path') else False
+            return jsonify({'success': True, 'backup': backup})
+        return jsonify({'success': False, 'message': 'Backup no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@main_bp.route('/backups/download/<backup_id>', methods=['GET'])
+@login_required
+def backups_download(backup_id):
+    """Descargar archivo de backup"""
+    try:
+        backup = db.backups.find_one({'_id': ObjectId(backup_id)})
+        if backup and os.path.exists(backup.get('file_path', '')):
+            from flask import send_file
+            return send_file(
+                backup['file_path'],
+                as_attachment=True,
+                download_name=backup['filename'],
+                mimetype='application/gzip'
+            )
+        return jsonify({'success': False, 'message': 'Archivo no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@main_bp.route('/backups/<backup_id>', methods=['DELETE'])
+@login_required
+def backups_delete(backup_id):
+    """Eliminar un backup"""
+    backup_manager = BackupManager(db)
+    success, message = backup_manager.delete_backup(backup_id)
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 500
+
+@main_bp.route('/backups/cleanup-expired', methods=['POST'])
+@login_required
+def backups_cleanup_expired():
+    """Limpiar backups expirados"""
+    backup_manager = BackupManager(db)
+    success, message = backup_manager.cleanup_expired()
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 500
+
+@main_bp.route('/backups/usb-devices', methods=['GET'])
+@login_required
+def backups_usb_devices():
+    """Detectar dispositivos USB"""
+    backup_manager = BackupManager(db)
+    if platform.system() == 'Windows':
+        drives = backup_manager.get_usb_drives_windows()
+    else:
+        # Para Linux/Mac se puede implementar similar
+        drives = []
+    return jsonify({'success': True, 'usb_drives': drives})
+
+@main_bp.route('/backups/create-usb', methods=['POST'])
+@login_required
+def backups_create_usb():
+    """Crear backup directamente en USB"""
+    data = request.get_json()
+    drive_letter = data.get('drive_letter')
+    backup_type = data.get('type', 'complete')
+    
+    if not drive_letter:
+        return jsonify({'success': False, 'message': 'Selecciona un dispositivo USB'}), 400
+    
+    backup_manager = BackupManager(db)
+    success, message = backup_manager.create_usb_backup(drive_letter, backup_type)
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 500
+
+@main_bp.route('/backups/sync-to-usb', methods=['POST'])
+@login_required
+def backups_sync_to_usb():
+    """Sincronizar backup existente a USB"""
+    data = request.get_json()
+    drive_letter = data.get('drive_letter')
+    backup_id = data.get('backup_id')
+    
+    if not drive_letter or not backup_id:
+        return jsonify({'success': False, 'message': 'Datos incompletos'}), 400
+    
+    backup_manager = BackupManager(db)
+    success, message = backup_manager.sync_to_usb(drive_letter, backup_id)
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 500
+
+@main_bp.route('/backups/usb-files/<drive_letter>', methods=['GET'])
+@login_required
+def backups_usb_files(drive_letter):
+    """Listar archivos de backup en USB"""
+    backup_manager = BackupManager(db)
+    files = backup_manager.get_usb_files(drive_letter)
+    return jsonify({'success': True, 'files': files})
+
+@main_bp.route('/backups/import-from-usb', methods=['POST'])
+@login_required
+def backups_import_from_usb():
+    """Importar backup desde USB"""
+    data = request.get_json()
+    drive_letter = data.get('drive_letter')
+    filename = data.get('filename')
+    
+    if not drive_letter or not filename:
+        return jsonify({'success': False, 'message': 'Datos incompletos'}), 400
+    
+    backup_manager = BackupManager(db)
+    success, message = backup_manager.import_from_usb(drive_letter, filename)
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 500
+
+@main_bp.route('/backups/open-folder', methods=['POST'])
+@login_required
+def backups_open_folder():
+    """Abrir carpeta de backups en explorador"""
+    try:
+        backup_manager = BackupManager(db)
+        backup_path = backup_manager.backup_dir
+        
+        if platform.system() == 'Windows':
+            os.startfile(backup_path)
+        elif platform.system() == 'Darwin':  # macOS
+            subprocess.run(['open', backup_path])
+        else:  # Linux
+            subprocess.run(['xdg-open', backup_path])
+        
+        return jsonify({'success': True, 'message': 'Carpeta de backups abierta'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

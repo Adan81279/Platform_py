@@ -181,6 +181,7 @@
             <a href="{{ url_for('main.materiales') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.materiales' else '' }}"><i class="bi bi-box-seam"></i>Materiales</a>
             <a href="{{ url_for('main.vehiculos') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.vehiculos' else '' }}"><i class="bi bi-car-front"></i>Vehículos</a>
             <a href="{{ url_for('main.reportes') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.reportes' else '' }}"><i class="bi bi-file-earmark-bar-graph"></i>Reportes</a>
+            <a href="{{ url_for('main.backups') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.backups' else '' }}"><i class="bi bi-database"></i>Backups</a>
         </nav>
         <div class="user-profile-header">
             <img src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}" class="user-avatar-header" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';" />
