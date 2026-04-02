@@ -1,4 +1,3 @@
-# app/__init__.py
 from flask import Flask
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -32,17 +31,32 @@ def create_app(config_class=Config):
     
     # Configurar MongoDB
     try:
+        # Mostrar qué URI estamos usando (ocultando contraseña)
+        uri_display = app.config['MONGO_URI']
+        if '@' in uri_display:
+            parts = uri_display.split('@')
+            uri_display = f"{parts[0].split(':')[0]}:***@{parts[1]}"
+        print(f"🔗 Conectando a: {uri_display}")
+        
         mongo_client = MongoClient(app.config['MONGO_URI'])
         db = mongo_client[app.config['MONGO_DB']]
         
         # Probar conexión
         mongo_client.admin.command('ping')
-        print(f"✅ Conectado a MongoDB: {app.config['MONGO_DB']}")
+        print(f"✅ Conectado exitosamente a MongoDB Atlas")
+        print(f"   Base de datos: {app.config['MONGO_DB']}")
+        
+        # Mostrar información del cluster
+        try:
+            build_info = mongo_client.admin.command('buildInfo')
+            print(f"   Versión MongoDB: {build_info.get('version', 'Desconocida')}")
+        except:
+            pass
         
     except Exception as e:
         print(f"❌ Error conectando a MongoDB: {e}")
-        print("   Asegúrate de que MongoDB esté corriendo")
-        print("   ⚠️ Continuando sin MongoDB para mostrar la página de inicio")
+        print("   Verifica tu cadena de conexión y credenciales")
+        print("   Asegúrate que tu IP esté en la whitelist de Atlas")
     
     # Crear índices únicos (solo si MongoDB está conectado)
     if db is not None:
@@ -59,7 +73,6 @@ def create_app(config_class=Config):
             
             # Materiales - Verificar si el índice ya existe
             try:
-                # Verificar si el índice ya existe
                 existing_indexes = [idx['name'] for idx in db.materiales.list_indexes()]
                 
                 if 'idx_clave_unique' in existing_indexes:

@@ -34,7 +34,6 @@ def index():
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        # Redirigir según el rol del usuario ya autenticado
         if current_user.is_admin:
             return redirect(url_for('main.dashboard'))
         else:
@@ -49,7 +48,6 @@ def login():
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            # Redirigir según el rol del usuario
             if user.is_admin:
                 return redirect(url_for('main.dashboard'))
             else:
@@ -80,8 +78,12 @@ def registro():
         if not nombre or not correo or not password:
             return jsonify({'message': 'Todos los campos son obligatorios'}), 400
         
-        # Validar dominio de correo
-        if not (correo.endswith('@bonafont.com') or correo.endswith('@danone.com')):
+        # Validar dominio de correo y asignar rol automáticamente
+        if correo.endswith('@bonafont.com'):
+            tipo_usuario = 1  # Administrador
+        elif correo.endswith('@danone.com'):
+            tipo_usuario = 2  # Usuario normal
+        else:
             return jsonify({'message': 'Solo se permiten correos con dominio @bonafont.com o @danone.com'}), 400
         
         # Validar contraseña
@@ -98,7 +100,7 @@ def registro():
         if foto and foto.filename:
             nombre_foto = guardar_foto(foto, nombre)
         
-        # Crear usuario usando bcrypt (coherente con el modelo)
+        # Crear usuario usando bcrypt
         import bcrypt
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         
@@ -106,7 +108,7 @@ def registro():
             'nombre': nombre,
             'correo': correo,
             'password': hashed_password,
-            'tipo_usuario': 2,  # Usuario normal por defecto
+            'tipo_usuario': tipo_usuario,  # Asignado según el dominio del correo
             'foto_usuario_url': nombre_foto,
             'fecha_registro': datetime.utcnow(),
             'activo': True,
@@ -116,10 +118,14 @@ def registro():
         
         result = db.users.insert_one(nuevo_usuario)
         
+        # Mensaje según el tipo de usuario
+        rol = "Administrador" if tipo_usuario == 1 else "Usuario Normal"
+        
         return jsonify({
             'success': True, 
-            'message': 'Usuario registrado exitosamente',
-            'user_id': str(result.inserted_id)
+            'message': f'Usuario registrado exitosamente como {rol}',
+            'user_id': str(result.inserted_id),
+            'rol': rol
         }), 200
         
     except Exception as e:
@@ -430,9 +436,20 @@ def add_user():
     password = request.form.get('password')
     tipo = int(request.form.get('tipo_usuario', 2))
     foto = request.files.get('foto_usuario')
+    
+    if tipo == 1:
+        tipo_usuario = 1
+    elif correo.endswith('@bonafont.com'):
+        tipo_usuario = 1
+    elif correo.endswith('@danone.com'):
+        tipo_usuario = 2
+    else:
+        flash('Solo se permiten correos con dominio @bonafont.com o @danone.com', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
     nombre_foto = guardar_foto(foto, nombre)
     
-    result, message = Usuario.crear_usuario(db, nombre, correo, password, tipo, foto=nombre_foto)
+    result, message = Usuario.crear_usuario(db, nombre, correo, password, tipo_usuario, foto=nombre_foto)
     flash("Usuario creado con éxito" if result else message, "success" if result else "danger")
     return redirect(url_for('main.dashboard'))
 
