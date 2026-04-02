@@ -47,9 +47,16 @@ def login():
             flash(error, 'danger')
     return render_template('auth/login.html', form=form)
 
+# RUTA GET PARA VISTA DE REGISTRO
+@main_bp.route('/registro', methods=['GET'])
+def registro_page():
+    """Vista de registro de usuarios"""
+    from app.forms import RegistroForm
+    form = RegistroForm()
+    return render_template('registro.html', form=form)
 
+# RUTA POST PARA REGISTRO DE USUARIOS
 @main_bp.route('/registro', methods=['POST'])
-
 def registro():
     """Registro de nuevos usuarios desde la página de login"""
     try:
@@ -80,16 +87,20 @@ def registro():
         if foto and foto.filename:
             nombre_foto = guardar_foto(foto, nombre)
         
-        # Crear usuario (tipo 2 = usuario normal por defecto)
-        from werkzeug.security import generate_password_hash
+        # Crear usuario usando bcrypt (coherente con el modelo)
+        import bcrypt
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         
         nuevo_usuario = {
             'nombre': nombre,
             'correo': correo,
-            'password': generate_password_hash(password),
-            'tipo_usuario': 2,  
+            'password': hashed_password,
+            'tipo_usuario': 2,  # Usuario normal por defecto
             'foto_usuario_url': nombre_foto,
-            'fecha_registro': datetime.utcnow()
+            'fecha_registro': datetime.utcnow(),
+            'activo': True,
+            'intentos_fallidos': 0,
+            'bloqueado_hasta': None
         }
         
         result = db.users.insert_one(nuevo_usuario)
@@ -101,6 +112,8 @@ def registro():
         }), 200
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'message': f'Error al registrar: {str(e)}'}), 500
 
 @main_bp.route('/dashboard')
