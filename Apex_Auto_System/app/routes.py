@@ -34,7 +34,12 @@ def index():
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
+        # Redirigir según el rol del usuario ya autenticado
+        if current_user.is_admin:
+            return redirect(url_for('main.dashboard'))
+        else:
+            return redirect(url_for('main.user_dashboard'))
+    
     form = LoginForm()
     if form.validate_on_submit():
         user, error = Usuario.verificar_credenciales(db, form.correo.data, form.password.data)
@@ -42,7 +47,13 @@ def login():
             login_user(user, remember=True)
             flash(f'¡Bienvenido {user.nombre}!', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+            if next_page:
+                return redirect(next_page)
+            # Redirigir según el rol del usuario
+            if user.is_admin:
+                return redirect(url_for('main.dashboard'))
+            else:
+                return redirect(url_for('main.user_dashboard'))
         else:
             flash(error, 'danger')
     return render_template('auth/login.html', form=form)
@@ -586,6 +597,266 @@ def delete_lugar(id):
     except Exception as e:
         return jsonify({'message': str(e)}), 500
     
+# ================================================
+# RUTAS PARA USUARIOS NORMALES (con vistas separadas)
+# ================================================
+
+# Ruta para buscar vehículos (usada en reportes)
+@main_bp.route('/buscar-vehiculos', methods=['GET'])
+@login_required
+def buscar_vehiculos():
+    """Buscar vehículos por número económico o placas (AJAX)"""
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify([])
+    
+    # Buscar vehículos que coincidan con la búsqueda
+    vehiculos = list(db.vehiculos.find({
+        '$or': [
+            {'eco': {'$regex': q, '$options': 'i'}},
+            {'placas': {'$regex': q, '$options': 'i'}}
+        ]
+    }).limit(10))
+    
+    resultados = []
+    for v in vehiculos:
+        resultados.append({
+            'id': str(v['_id']),
+            'economico': v.get('eco', ''),
+            'placas': v.get('placas', ''),
+            'marca': v.get('marca', ''),
+            'modelo': v.get('modelo', '')
+        })
+    
+    return jsonify(resultados)
+
+
+# Dashboard del usuario normal
+@main_bp.route('/user/dashboard')
+@login_required
+def user_dashboard():
+    """Vista principal para usuarios normales"""
+    from datetime import datetime, timedelta
+    
+    # Obtener vehículos asignados al usuario
+    vehiculos_asignados = list(db.vehiculos.find({'conductor': current_user.nombre}))
+    
+    # Obtener historial de materiales utilizados por el usuario
+    historial = list(db.historial_uso.find({'usuario_id': ObjectId(current_user.id)}).sort('fecha', -1).limit(10))
+    
+    # Enriquecer historial con descripciones de materiales
+    for h in historial:
+        material = db.materiales.find_one({'_id': h['material_id']})
+        if material:
+            h['material_descripcion'] = material.get('descripcion', '')
+        else:
+            h['material_descripcion'] = 'Material no disponible'
+        
+        # Obtener información del vehículo
+        if h.get('vehiculo_id'):
+            vehiculo = db.vehiculos.find_one({'_id': h['vehiculo_id']})
+            if vehiculo:
+                h['vehiculo_info'] = f"{vehiculo.get('eco', '')} - {vehiculo.get('placas', '')}"
+            else:
+                h['vehiculo_info'] = 'No especificado'
+        else:
+            h['vehiculo_info'] = 'No especificado'
+    
+    # Materiales con stock bajo (menos de 10 unidades)
+    stock_bajo = list(db.materiales.find({'existencia': {'$lt': 10}}).limit(5))
+    for m in stock_bajo:
+        if m.get('lugar_id'):
+            lugar = db.lugares.find_one({'_id': ObjectId(m['lugar_id'])})
+            m['lugar_nombre'] = lugar.get('nombre', '-') if lugar else '-'
+        else:
+            m['lugar_nombre'] = '-'
+    
+    # Estadísticas
+    stats = {
+        'vehiculos_asignados': len(vehiculos_asignados),
+        'materiales_utilizados': db.historial_uso.count_documents({'usuario_id': ObjectId(current_user.id)}),
+        'total_reportes': db.historial_uso.count_documents({'usuario_id': ObjectId(current_user.id)}),
+        'stock_bajo': len(stock_bajo)
+    }
+    
+    return render_template('auth/user_dashboard.html', 
+                         vehiculos_asignados=vehiculos_asignados,
+                         historial=historial,
+                         stock_bajo=stock_bajo,
+                         stats=stats)
+
+
+# Vista de vehículos para usuario normal (solo lectura)
+@main_bp.route('/user/vehiculos')
+@login_required
+def user_vehiculos():
+    """Vista de vehículos para usuarios normales (solo los asignados)"""
+    vehiculos = list(db.vehiculos.find({'conductor': current_user.nombre}))
+    return render_template('auth/user_vehiculos.html', vehiculos=vehiculos)
+
+
+# Vista de materiales para usuario normal
+@main_bp.route('/user/materiales')
+@login_required
+def user_materiales():
+    """Vista de materiales para usuarios normales (solo lectura y reporte)"""
+    materiales = list(db.materiales.find())
+    
+    # Enriquecer con nombre del lugar
+    for m in materiales:
+        if m.get('lugar_id'):
+            lugar = db.lugares.find_one({'_id': ObjectId(m['lugar_id'])})
+            m['lugar_nombre'] = lugar.get('nombre', '-') if lugar else '-'
+        else:
+            m['lugar_nombre'] = '-'
+    
+    return render_template('auth/user_materiales.html', materiales=materiales)
+
+
+# Vista de reportes para usuario normal (solo sus reportes)
+@main_bp.route('/user/reportes')
+@login_required
+def user_reportes():
+    """Vista de reportes para usuarios normales (solo sus reportes)"""
+    reportes = list(db.historial_uso.find({'usuario_id': ObjectId(current_user.id)}).sort('fecha', -1))
+    
+    # Enriquecer reportes con información adicional
+    total_costo = 0
+    materiales_set = set()
+    
+    for r in reportes:
+        # Formatear fecha
+        if isinstance(r.get('fecha'), datetime):
+            r['fecha'] = r['fecha']
+        else:
+            r['fecha'] = datetime.utcnow()
+        
+        # Obtener descripción del material
+        material = db.materiales.find_one({'_id': r['material_id']})
+        if material:
+            r['material_descripcion'] = material.get('descripcion', '')
+            r['costo_unitario'] = material.get('costo', 0)
+            materiales_set.add(r['material_clave'])
+        else:
+            r['material_descripcion'] = 'Material no disponible'
+            r['costo_unitario'] = 0
+        
+        # Calcular costo total
+        r['costo_total'] = r.get('costo_total', r['cantidad'] * r['costo_unitario'])
+        total_costo += r['costo_total']
+        
+        # Obtener información del vehículo
+        if r.get('vehiculo_id'):
+            vehiculo = db.vehiculos.find_one({'_id': r['vehiculo_id']})
+            if vehiculo:
+                r['vehiculo_info'] = f"{vehiculo.get('eco', '')} - {vehiculo.get('placas', '')}"
+            else:
+                r['vehiculo_info'] = 'No especificado'
+        else:
+            r['vehiculo_info'] = 'No especificado'
+    
+    stats = {
+        'total_reportes': len(reportes),
+        'total_materiales': len(materiales_set),
+        'costo_total': total_costo
+    }
+    
+    return render_template('auth/user_reportes.html', reportes=reportes, stats=stats)
+
+
+# Vista de perfil para usuario normal
+@main_bp.route('/user/perfil')
+@login_required
+def user_perfil():
+    """Vista de perfil para usuarios normales"""
+    return render_template('auth/user_perfil.html')
+
+
+# Actualizar perfil de usuario normal (SOLO nombre y foto)
+@main_bp.route('/user/update-perfil', methods=['POST'])
+@login_required
+def user_update_perfil():
+    """Actualizar información del perfil del usuario normal (solo nombre y foto)"""
+    nombre = request.form.get('nombre', '').strip()
+    foto = request.files.get('foto_usuario')
+    
+    try:
+        # Validar que el nombre no esté vacío
+        if not nombre:
+            flash('El nombre no puede estar vacío', 'danger')
+            return redirect(url_for('main.user_perfil'))
+        
+        # Obtener usuario actual
+        usuario_actual = db.users.find_one({'_id': ObjectId(current_user.id)})
+        if not usuario_actual:
+            flash('Usuario no encontrado', 'danger')
+            return redirect(url_for('main.user_perfil'))
+        
+        # Guardar nueva foto si se proporcionó
+        nombre_foto = usuario_actual.get('foto_usuario_url', 'default.png')
+        if foto and foto.filename:
+            nombre_foto = guardar_foto(foto, nombre, nombre_foto)
+        
+        # Preparar datos de actualización (SOLO nombre y foto)
+        datos_actualizar = {
+            'nombre': nombre,
+            'foto_usuario_url': nombre_foto
+        }
+        
+        # Actualizar en la base de datos
+        result = db.users.update_one(
+            {'_id': ObjectId(current_user.id)},
+            {'$set': datos_actualizar}
+        )
+        
+        if result.modified_count > 0:
+            flash('Perfil actualizado correctamente', 'success')
+        else:
+            flash('No se realizaron cambios', 'info')
+            
+    except Exception as e:
+        flash(f'Error al actualizar perfil: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.user_perfil'))
+
+# Detalle de reporte (AJAX)
+@main_bp.route('/reporte-detalle/<reporte_id>', methods=['GET'])
+@login_required
+def reporte_detalle(reporte_id):
+    """Obtener detalles de un reporte específico (AJAX)"""
+    try:
+        reporte = db.historial_uso.find_one({'_id': ObjectId(reporte_id)})
+        
+        # Verificar que el reporte pertenezca al usuario actual (seguridad)
+        if str(reporte['usuario_id']) != str(current_user.id) and not current_user.is_admin:
+            return jsonify({'error': 'No tienes permisos para ver este reporte'}), 403
+        
+        if reporte:
+            # Obtener descripción del material
+            material = db.materiales.find_one({'_id': reporte['material_id']})
+            material_descripcion = material.get('descripcion', '') if material else 'Material no disponible'
+            costo_unitario = material.get('costo', 0) if material else 0
+            
+            # Obtener información del vehículo
+            vehiculo_info = 'No especificado'
+            if reporte.get('vehiculo_id'):
+                vehiculo = db.vehiculos.find_one({'_id': reporte['vehiculo_id']})
+                if vehiculo:
+                    vehiculo_info = f"{vehiculo.get('eco', '')} - {vehiculo.get('placas', '')}"
+            
+            return jsonify({
+                '_id': str(reporte['_id']),
+                'fecha': reporte['fecha'].strftime('%d/%m/%Y %H:%M') if isinstance(reporte['fecha'], datetime) else str(reporte['fecha']),
+                'material_clave': reporte.get('material_clave', ''),
+                'material_descripcion': material_descripcion,
+                'cantidad': reporte.get('cantidad', 0),
+                'costo_unitario': f"{costo_unitario:.2f}",
+                'costo_total': f"{reporte.get('costo_total', 0):.2f}",
+                'vehiculo_info': vehiculo_info
+            })
+        return jsonify({'error': 'Reporte no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
     
     # --- RUTAS PARA BACKUPS ---

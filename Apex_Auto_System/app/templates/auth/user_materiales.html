@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Materiales - Apex Auto System</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: "Poppins", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header-section {
+            background-color: white;
+            padding: 10px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        .logo {
+            width: 140px;
+            height: auto;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 8px 14px;
+            text-decoration: none;
+            color: #555;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link-custom:hover,
+        .nav-link-custom.active {
+            color: #fff;
+            background-color: #3182ce;
+        }
+        .nav-link-custom i {
+            margin-right: 6px;
+            font-size: 15px;
+        }
+        .user-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar-header {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3182ce;
+        }
+        .user-name-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .main-panel-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            margin-bottom: 40px;
+        }
+        .panel-title-container {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #2b6cb0;
+        }
+        .panel-title-container i { font-size: 2rem; margin-bottom: 5px; }
+        .panel-title { font-size: 22px; font-weight: 700; position: relative; }
+        .panel-title::after {
+            content: ""; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 3px; background-color: #2b6cb0;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-input-pill {
+            border-radius: 10px;
+            padding: 12px 20px;
+            padding-right: 45px;
+            border: 1px solid #e2e8f0;
+            width: 100%;
+        }
+        .search-icon-pill {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            font-size: 18px;
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-custom thead th {
+            background-color: #f8fafc;
+            color: #2d3748;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table-custom tbody td {
+            color: #4a5568;
+            font-size: 13px;
+            padding: 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .badge-existencia {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .bg-high { background-color: #c6f6d5; color: #22543d; }
+        .bg-medium { background-color: #fefcbf; color: #975a16; }
+        .bg-low { background-color: #fed7d7; color: #822727; }
+        .btn-report {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            transition: all 0.2s;
+        }
+        .btn-report:hover { transform: translateY(-1px); opacity: 0.9; }
+        .modal-header-custom { border-radius: 12px 12px 0 0; }
+        .detail-img { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #e8f4f8; }
+    </style>
+</head>
+<body>
+
+    <header class="header-section">
+        <img src="{{ url_for('static', filename='img/FontTrack.png') }}" alt="Logo" class="logo" onclick="window.location.href='{{ url_for('main.index') }}'" />
+        <nav class="nav-links">
+            <a href="{{ url_for('main.user_dashboard') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_dashboard' else '' }}"><i class="bi bi-speedometer2"></i>Mi Panel</a>
+            <a href="{{ url_for('main.user_vehiculos') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_vehiculos' else '' }}"><i class="bi bi-car-front"></i>Mis Vehículos</a>
+            <a href="{{ url_for('main.user_materiales') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_materiales' else '' }}"><i class="bi bi-box-seam"></i>Materiales</a>
+            <a href="{{ url_for('main.user_reportes') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_reportes' else '' }}"><i class="bi bi-file-earmark-bar-graph"></i>Mis Reportes</a>
+            <a href="{{ url_for('main.user_perfil') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_perfil' else '' }}"><i class="bi bi-person-circle"></i>Mi Perfil</a>
+        </nav>
+        <div class="user-profile-header">
+            <img src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}" class="user-avatar-header" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';" />
+            <span class="user-name-header">{{ current_user.nombre }}</span>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-sm btn-outline-danger ms-2">Salir</a>
+        </div>
+    </header>
+
+    <div class="container-xl">
+        <div class="main-panel-card">
+            
+            <div class="panel-title-container">
+                <i class="bi bi-box-seam"></i>
+                <h2 class="panel-title">Inventario de Materiales</h2>
+                <p class="text-muted mt-2">Consulta y reporta uso de materiales</p>
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="searchMateriales" class="search-input-pill" placeholder="Buscar por clave, descripción o clasificación..." />
+                <i class="bi bi-search search-icon-pill"></i>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom" id="tablaMateriales">
+                    <thead>
+                        <tr>
+                            <th>Clave</th>
+                            <th>Descripción</th>
+                            <th>Genérico</th>
+                            <th>Clasificación</th>
+                            <th>Existencia</th>
+                            <th>Costo ($)</th>
+                            <th>Lugar</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in materiales %}
+                        <tr>
+                            <td><strong>{{ m.clave }}</strong></td>
+                            <td>{{ m.descripcion }}</td>
+                            <td>{{ m.generico or '-' }}</td>
+                            <td>{{ m.clasificacion or '-' }}</td>
+                            <td>
+                                {% set existencia = m.existencia or 0 %}
+                                <span class="badge-existencia {% if existencia > 50 %}bg-high{% elif existencia > 10 %}bg-medium{% else %}bg-low{% endif %}">
+                                    {{ existencia }} pzs
+                                </span>
+                            </td>
+                            <td>$ {{ "{:,.2f}".format(m.costo or 0) }}</td>
+                            <td>{{ m.lugar_nombre or '-' }}</td>
+                            <td>
+                                <button class="btn-report btn-sm btnReportar"
+                                    data-id="{{ m._id }}"
+                                    data-clave="{{ m.clave }}"
+                                    data-descripcion="{{ m.descripcion }}"
+                                    data-existencia="{{ m.existencia or 0 }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalReporte"
+                                    title="Reportar uso">
+                                    <i class="bi bi-clipboard-plus"></i> Reportar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reportar Uso -->
+    <div class="modal fade" id="modalReporte" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 15px">
+                <div class="modal-header bg-info text-white modal-header-custom">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-clipboard-data me-2"></i>Reportar Uso de Material
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formReporte">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="repId" name="material_id" />
+                        <div class="alert alert-info mb-3">
+                            <strong><i class="bi bi-box"></i> Material:</strong>
+                            <p class="mb-0 mt-1" id="repInfo"></p>
+                            <small class="text-muted" id="repExistencia"></small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Cantidad a descontar *</label>
+                            <input type="number" name="cantidad" id="cantidadReporte" class="form-control form-control-lg" min="1" required />
+                            <small class="text-muted">Ingrese la cantidad de unidades utilizadas</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Vehículo (Opcional)</label>
+                            <input type="text" id="busVeh" class="form-control" placeholder="Buscar por placas o número económico..." autocomplete="off" />
+                            <div id="resVeh" class="list-group mt-1" style="max-height: 200px; overflow-y: auto; display: none"></div>
+                            <input type="hidden" name="vehiculo_id" id="vehId" />
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-info text-white px-4">Confirmar Uso</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            const csrfToken = $('meta[name="csrf-token"]').attr("content");
+
+            $.ajaxSetup({
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+
+            // Búsqueda en tiempo real
+            $("#searchMateriales").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $("#tablaMateriales tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
+            });
+
+            // Preparar reporte de uso
+            $(document).on("click", ".btnReportar", function() {
+                const id = $(this).data("id");
+                const clave = $(this).data("clave");
+                const descripcion = $(this).data("descripcion");
+                const existencia = $(this).data("existencia");
+                
+                $("#repId").val(id);
+                $("#repInfo").html(`<strong>Clave:</strong> ${clave}<br><strong>Descripción:</strong> ${descripcion}`);
+                $("#repExistencia").html(`Existencia actual: ${existencia} pzs`);
+                $("#cantidadReporte").attr("max", existencia);
+                $("#busVeh").val("");
+                $("#vehId").val("");
+                $("#resVeh").hide();
+                $("#cantidadReporte").val("");
+            });
+
+            // Buscador de vehículos
+            let searchTimeout;
+            $("#busVeh").on("input", function() {
+                clearTimeout(searchTimeout);
+                let q = $(this).val();
+                if (q.length > 1) {
+                    searchTimeout = setTimeout(function() {
+                        $.get("/buscar-vehiculos", { q: q }, function(data) {
+                            let html = "";
+                            if (data.length === 0) {
+                                html = '<div class="list-group-item text-muted">No se encontraron vehículos</div>';
+                            } else {
+                                data.forEach(function(v) {
+                                    html += `<button type="button" class="list-group-item list-group-item-action selVeh" data-id="${v.id}">${v.economico} - ${v.placas}</button>`;
+                                });
+                            }
+                            $("#resVeh").html(html).show();
+                        });
+                    }, 300);
+                } else {
+                    $("#resVeh").hide();
+                }
+            });
+
+            $(document).on("click", ".selVeh", function() {
+                $("#vehId").val($(this).data("id"));
+                $("#busVeh").val($(this).text());
+                $("#resVeh").hide();
+            });
+
+            // Enviar reporte de uso
+            $("#formReporte").submit(function(e) {
+                e.preventDefault();
+                const cantidad = $("#cantidadReporte").val();
+                const existencia = $("#repExistencia").text().match(/\d+/);
+                if (!cantidad || cantidad < 1) {
+                    alert("Por favor ingrese una cantidad válida");
+                    return;
+                }
+                if (existencia && parseInt(cantidad) > parseInt(existencia[0])) {
+                    alert(`La cantidad no puede ser mayor a la existencia actual (${existencia[0]} pzs)`);
+                    return;
+                }
+                $.ajax({
+                    url: "/material/reportar",
+                    method: "POST",
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        $("#modalReporte").modal("hide");
+                        location.reload();
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON?.error || "Error al reportar el uso");
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

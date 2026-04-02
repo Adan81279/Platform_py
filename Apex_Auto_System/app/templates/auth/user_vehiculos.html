@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Mis Vehículos - Apex Auto System</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: "Poppins", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header-section {
+            background-color: white;
+            padding: 10px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        .logo {
+            width: 140px;
+            height: auto;
+            cursor: pointer;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 8px 14px;
+            text-decoration: none;
+            color: #555;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link-custom:hover,
+        .nav-link-custom.active {
+            color: #fff;
+            background-color: #3182ce;
+        }
+        .nav-link-custom i {
+            margin-right: 6px;
+            font-size: 15px;
+        }
+        .user-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar-header {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3182ce;
+        }
+        .user-name-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .main-panel-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            margin-bottom: 40px;
+        }
+        .panel-title-container {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #2b6cb0;
+        }
+        .panel-title-container i { font-size: 2rem; margin-bottom: 5px; }
+        .panel-title { font-size: 22px; font-weight: 700; position: relative; }
+        .panel-title::after {
+            content: ""; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 3px; background-color: #2b6cb0;
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-custom thead th {
+            background-color: #f8fafc;
+            color: #2d3748;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table-custom tbody td {
+            color: #4a5568;
+            font-size: 13px;
+            padding: 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .badge-status-activo { background-color: #c6f6d5; color: #22543d; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-status-mantenimiento { background-color: #feebc8; color: #744210; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-status-inactivo { background-color: #edf2f7; color: #4a5568; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .btn-action-view { background-color: #90cdf4; color: white; border: none; border-radius: 6px; padding: 6px 12px; margin-right: 5px; }
+        .btn-action-view:hover { opacity: 0.8; }
+        .modal-details-header { background-color: #5dade2; color: white; border-radius: 12px 12px 0 0; border: none; }
+        .detail-img { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #e8f4f8; }
+    </style>
+</head>
+<body>
+
+    <header class="header-section">
+        <img src="{{ url_for('static', filename='img/FontTrack.png') }}" alt="Logo" class="logo" onclick="window.location.href='{{ url_for('main.index') }}'" />
+        <nav class="nav-links">
+            <a href="{{ url_for('main.user_dashboard') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_dashboard' else '' }}"><i class="bi bi-speedometer2"></i>Mi Panel</a>
+            <a href="{{ url_for('main.user_vehiculos') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_vehiculos' else '' }}"><i class="bi bi-car-front"></i>Mis Vehículos</a>
+            <a href="{{ url_for('main.user_materiales') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_materiales' else '' }}"><i class="bi bi-box-seam"></i>Materiales</a>
+            <a href="{{ url_for('main.user_reportes') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_reportes' else '' }}"><i class="bi bi-file-earmark-bar-graph"></i>Mis Reportes</a>
+            <a href="{{ url_for('main.user_perfil') }}" class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_perfil' else '' }}"><i class="bi bi-person-circle"></i>Mi Perfil</a>
+        </nav>
+        <div class="user-profile-header">
+            <img src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}" class="user-avatar-header" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';" />
+            <span class="user-name-header">{{ current_user.nombre }}</span>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-sm btn-outline-danger ms-2">Salir</a>
+        </div>
+    </header>
+
+    <div class="container-xl">
+        <div class="main-panel-card">
+            
+            <div class="panel-title-container">
+                <i class="bi bi-car-front"></i>
+                <h2 class="panel-title">Mis Vehículos Asignados</h2>
+                <p class="text-muted mt-2">Vehículos que tienes asignados para operar</p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom" id="tablaVehiculos">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-tag"></i> ECO</th>
+                            <th><i class="bi bi-credit-card-2-front"></i> Placas</th>
+                            <th><i class="bi bi-car-front"></i> Marca/Modelo</th>
+                            <th><i class="bi bi-calendar-event"></i> Año</th>
+                            <th><i class="bi bi-speedometer2"></i> Kilometraje</th>
+                            <th><i class="bi bi-check-circle"></i> Estado</th>
+                            <th><i class="bi bi-geo-alt"></i> Lugar</th>
+                            <th class="text-center"><i class="bi bi-eye"></i> Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in vehiculos %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ v.eco }}</td>
+                            <td>{{ v.placas }}</td>
+                            <td>
+                                <span class="fw-bold">{{ v.marca }}</span>
+                                <span class="text-muted d-block">{{ v.modelo }}</span>
+                            </td>
+                            <td>{{ v.anio }}</td>
+                            <td>{{ "{:,}".format(v.kilometraje) }} km</td>
+                            <td>
+                                {% if v.estado == 'Activo' %}
+                                    <span class="badge-status-activo">Activo</span>
+                                {% elif v.estado == 'Mantenimiento' %}
+                                    <span class="badge-status-mantenimiento">Mantenimiento</span>
+                                {% else %}
+                                    <span class="badge-status-inactivo">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ v.lugar }}</td>
+                            <td class="text-center">
+                                <button class="btn-action-view btn-sm btnVer" data-id="{{ v._id }}" title="Ver detalles">
+                                    <i class="bi bi-eye"></i> Ver
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-car-front fs-1 d-block mb-2"></i>
+                                No tienes vehículos asignados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header modal-details-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-car-front me-2"></i>Detalles del Vehículo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 id="detEco" class="fw-bold text-primary mb-1"></h2>
+                        <p id="detPlacas" class="text-muted fs-5"></p>
+                        <div id="detEstadoBadge"></div>
+                    </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Marca/Modelo</small>
+                            <strong id="detMarcaModelo"></strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Año</small>
+                            <strong id="detAnio"></strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Kilometraje</small>
+                            <strong id="detKilometraje"></strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Lugar</small>
+                            <strong id="detLugar"></strong>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted d-block">Conductor Asignado</small>
+                            <strong id="detConductor"></strong>
+                        </div>
+                    </div>
+                    <hr>
+                    <small class="text-muted">ID Sistema: <span id="detId" class="font-monospace"></span></small>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Ver detalles del vehículo
+            $('.btnVer').on('click', function() {
+                let id = $(this).data('id');
+                $.get(`/vehiculos/${id}`, function(data) {
+                    $('#detId').text(data._id);
+                    $('#detEco').text(data.eco);
+                    $('#detPlacas').text(data.placas);
+                    $('#detMarcaModelo').text(`${data.marca} ${data.modelo}`);
+                    $('#detAnio').text(data.anio);
+                    $('#detKilometraje').text(Number(data.kilometraje).toLocaleString('en-US') + ' km');
+                    $('#detLugar').text(data.lugar);
+                    $('#detConductor').text(data.conductor || 'Sin asignar');
+                    
+                    let badgeHtml = '';
+                    if (data.estado === 'Activo') badgeHtml = '<span class="badge-status-activo fs-6">Activo</span>';
+                    else if (data.estado === 'Mantenimiento') badgeHtml = '<span class="badge-status-mantenimiento fs-6">Mantenimiento</span>';
+                    else badgeHtml = '<span class="badge-status-inactivo fs-6">Inactivo</span>';
+                    $('#detEstadoBadge').html(badgeHtml);
+
+                    $('#modalDetalle').modal('show');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

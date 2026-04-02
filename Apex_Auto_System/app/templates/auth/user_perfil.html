@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Mi Perfil - Apex Auto System</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        background-color: #f0f4f8;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .header-section {
+        background-color: white;
+        padding: 10px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .logo {
+        width: 140px;
+        height: auto;
+        cursor: pointer;
+      }
+      .nav-links {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 8px 14px;
+        text-decoration: none;
+        color: #555;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      .nav-link-custom:hover,
+      .nav-link-custom.active {
+        color: #fff;
+        background-color: #3182ce;
+      }
+      .nav-link-custom i {
+        margin-right: 6px;
+        font-size: 15px;
+      }
+      .user-profile-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-avatar-header {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #3182ce;
+      }
+      .user-name-header {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+      }
+      .main-panel-card {
+        background-color: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        margin-bottom: 40px;
+      }
+      .panel-title-container {
+        text-align: center;
+        margin-bottom: 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #2b6cb0;
+      }
+      .panel-title-container i {
+        font-size: 2rem;
+        margin-bottom: 5px;
+      }
+      .panel-title {
+        font-size: 22px;
+        font-weight: 700;
+        position: relative;
+      }
+      .panel-title::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background-color: #2b6cb0;
+      }
+      .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #3182ce;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+      .info-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .info-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: 1px;
+      }
+      .info-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c5f7d;
+        margin-top: 5px;
+      }
+      .btn-edit {
+        background: linear-gradient(135deg, #4a90e2, #5dade2);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 25px;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      .btn-edit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header-section">
+      <img
+        src="{{ url_for('static', filename='img/FontTrack.png') }}"
+        alt="Logo"
+        class="logo"
+        onclick="window.location.href='{{ url_for('main.index') }}'"
+      />
+      <nav class="nav-links">
+        <a
+          href="{{ url_for('main.user_dashboard') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_dashboard' else '' }}"
+          ><i class="bi bi-speedometer2"></i>Mi Panel</a
+        >
+        <a
+          href="{{ url_for('main.user_vehiculos') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_vehiculos' else '' }}"
+          ><i class="bi bi-car-front"></i>Mis Vehículos</a
+        >
+        <a
+          href="{{ url_for('main.user_materiales') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_materiales' else '' }}"
+          ><i class="bi bi-box-seam"></i>Materiales</a
+        >
+        <a
+          href="{{ url_for('main.user_reportes') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_reportes' else '' }}"
+          ><i class="bi bi-file-earmark-bar-graph"></i>Mis Reportes</a
+        >
+        <a
+          href="{{ url_for('main.user_perfil') }}"
+          class="nav-link-custom {{ 'active' if request.endpoint == 'main.user_perfil' else '' }}"
+          ><i class="bi bi-person-circle"></i>Mi Perfil</a
+        >
+      </nav>
+      <div class="user-profile-header">
+        <img
+          src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}"
+          class="user-avatar-header"
+          onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff';"
+        />
+        <span class="user-name-header">{{ current_user.nombre }}</span>
+        <a
+          href="{{ url_for('main.logout') }}"
+          class="btn btn-sm btn-outline-danger ms-2"
+          >Salir</a
+        >
+      </div>
+    </header>
+
+    <div class="container-xl">
+      <div class="main-panel-card">
+        <div class="panel-title-container">
+          <i class="bi bi-person-circle"></i>
+          <h2 class="panel-title">Mi Perfil</h2>
+          <p class="text-muted mt-2">Información personal y configuración</p>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <img
+              src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}"
+              class="profile-avatar mb-3"
+              onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=3182ce&color=fff&size=150';"
+            />
+            <div class="mt-2">
+              <span class="badge bg-info text-white px-3 py-2">
+                {% if current_user.is_admin %}Administrador{% else %}Usuario{%
+                endif %}
+              </span>
+            </div>
+          </div>
+
+          <div class="col-md-8">
+            <div class="info-card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="info-label">Nombre completo</div>
+                  <div class="info-value">{{ current_user.nombre }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="info-label">Correo electrónico</div>
+                  <div class="info-value">{{ current_user.correo }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="info-label">Fecha de registro</div>
+                  <div class="info-value">
+                    {{ current_user.fecha_registro.strftime('%d/%m/%Y') if
+                    current_user.fecha_registro else 'No disponible' }}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="info-label">Estado de cuenta</div>
+                  <div class="info-value">
+                    <span class="badge bg-success">Activo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-end mt-3">
+              <button
+                class="btn-edit"
+                data-bs-toggle="modal"
+                data-bs-target="#modalEditarPerfil"
+              >
+                <i class="bi bi-pencil-square me-2"></i>Editar Perfil
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar Perfil - VERSIÓN CORREGIDA (sin editar correo ni contraseña) -->
+    <div class="modal fade" id="modalEditarPerfil" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title fw-bold">
+              <i class="bi bi-pencil-square me-2"></i>Editar Mi Perfil
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form
+            id="formEditarPerfil"
+            action="{{ url_for('main.user_update_perfil') }}"
+            method="POST"
+            enctype="multipart/form-data"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body p-4">
+              <div class="text-center mb-3">
+                <img
+                  id="previewFoto"
+                  src="{{ url_for('static', filename='img/usuarios/' + (current_user.foto_usuario_url if current_user.foto_usuario_url else 'default.png')) }}"
+                  style="
+                    width: 100px;
+                    height: 100px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 3px solid #3182ce;
+                  "
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Foto de perfil</label>
+                <input
+                  type="file"
+                  name="foto_usuario"
+                  id="fotoPerfil"
+                  class="form-control"
+                  accept="image/*"
+                />
+                <small class="text-muted"
+                  >Dejar en blanco para mantener la foto actual</small
+                >
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Nombre completo</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  class="form-control"
+                  value="{{ current_user.nombre }}"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Correo electrónico</label>
+                <input
+                  type="email"
+                  name="correo"
+                  class="form-control"
+                  value="{{ current_user.correo }}"
+                  readonly
+                  disabled
+                  style="background-color: #e9ecef; cursor: not-allowed"
+                />
+                <small class="text-muted text-warning"
+                  ><i class="bi bi-info-circle"></i> El correo no puede ser
+                  modificado</small
+                >
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Contraseña</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  value="********"
+                  readonly
+                  disabled
+                  style="background-color: #e9ecef; cursor: not-allowed"
+                />
+                <small class="text-muted text-warning"
+                  ><i class="bi bi-info-circle"></i> La contraseña no puede ser
+                  modificada desde este panel</small
+                >
+              </div>
+            </div>
+            <div class="modal-footer border-0">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Guardar Cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      $(document).ready(function () {
+        // Previsualizar foto antes de subir
+        $("#fotoPerfil").on("change", function () {
+          const file = this.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              $("#previewFoto").attr("src", e.target.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,8 +1,11 @@
-# app/models.py
 from flask_login import UserMixin
 from bson import ObjectId
 from datetime import datetime
 import bcrypt
+from functools import wraps
+from flask import flash, redirect, url_for
+from flask_login import current_user
+
 
 class Usuario(UserMixin):
     def __init__(self, user_data):
@@ -91,3 +94,28 @@ class Usuario(UserMixin):
                 return None, "Contraseña incorrecta"
         except Exception as e:
             return None, f"Error de autenticación: {str(e)}"
+            
+def admin_required(f):
+    """Decorador para rutas que solo pueden acceder administradores"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+            return redirect(url_for('main.login'))
+        if not current_user.is_admin:
+            flash('No tienes permisos para acceder a esta página.', 'danger')
+            return redirect(url_for('main.user_dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def user_required(f):
+    """Decorador para rutas que solo pueden acceder usuarios normales"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Por favor inicia sesión para acceder a esta página.', 'warning')
+            return redirect(url_for('main.login'))
+        if current_user.is_admin:
+            return redirect(url_for('main.dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
